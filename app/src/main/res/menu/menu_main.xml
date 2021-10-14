@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="AlwaysShowAction">
+
+    <item
+        android:id="@+id/action_scan"
+        android:title="@string/scan_bluetooth"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_history"
+        android:title="@string/historical_data"
+        app:showAsAction="never" />
+
+
+    <item android:title="@string/scanning_mode">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/action_high"
+                    android:title="@string/scanner_new_version" />
+                <item
+                    android:id="@+id/action_low"
+                    android:title="@string/scanner_old_version" />
+                <item
+                    android:id="@+id/action_system"
+                    android:title="@string/scanner_system" />
+            </group>
+        </menu>
+
+    </item>
+
+    <item
+        android:id="@+id/action_debug"
+        android:title="Debug"
+        app:showAsAction="never" />
+</menu>

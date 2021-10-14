@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">EEG</string>
+
+
+    <string name="bluetooth_devices">Bluetooth devices</string>
+    <string name="scan_bluetooth">Scan bluetooth</string>
+    <string name="connect_bluetooth">Connect bluetooth</string>
+    <string name="disconnect_bluetooth">Disconnect bluetooth</string>
+    <string name="start_recording">Start recording</string>
+    <string name="stop_recording">Stop recording</string>
+
+    <string name="historical_data">Historical data</string>
+    <string name="scanning_mode">Scanning mode</string>
+    <string name="scanner_new_version">New version</string>
+    <string name="scanner_old_version">Old version</string>
+    <string name="scanner_system">System</string>
+
+    <string name="dialog_tip">Tips</string>
+    <string name="permission_required">Please grant location permission for normal use of app.</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+
+    <string name="share">Share</string>
+    <string name="delete">Delete</string>
+
+    <string name="tip_no_historical_data">No historical data available.</string>
+    <string name="tip_no_data">No data available.</string>
+
+    <string name="tip_delete_historical_data">Please confirm whether to delete this historical data?</string>
+    <string name="tip_delete_historical_data_failed">Failed to delete historical data.</string>
+
+    <string name="tip_no_bluetooth_device_available">No bluetooth device is available, Please scan the bluetooth device and connect one.</string>
+
+    <string name="tip_bluetooth_scan_frequently">Bluetooth scanning is too frequent.</string>
+    <string name="tip_bluetooth_scan_failed">Bluetooth scan failed.</string>
+    <string name="tip_bluetooth_connect_failed">Bluetooth connect failed.</string>
+    <string name="tip_bluetooth_connected">Bluetooth connected.</string>
+    <string name="tip_bluetooth_disconnected">Bluetooth disconnected.</string>
+    <string name="tip_bluetooth_connection_canceled">Bluetooth connection has been cancelled.</string>
+    <string name="tip_connecting_bluetooth">Connecting bluetooth…</string>
+</resources>
