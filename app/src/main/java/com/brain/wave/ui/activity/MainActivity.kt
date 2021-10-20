@@ -15,6 +15,7 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.brain.wave.R
+import com.brain.wave.model.DataReader
 import com.brain.wave.model.parseRawData
 import com.brain.wave.ui.BaseActivity
 import com.brain.wave.ui.fragment.ChartFragment
@@ -130,6 +131,21 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                 DataManager.beginAppend()
                 recordingBtn.setText(R.string.stop_recording)
             }
+        }
+
+        TimeCounter.start()
+        DataManager.beginAppend()
+        var count = 0
+        DataReader.send {
+            if(count < 50){
+                chartFragment?.addChartData(it.data)
+                if(count == 49) {
+                    DataManager.endAppend()
+                }
+            }else{
+                DataReader.cancel()
+            }
+            count+=1
         }
     }
 

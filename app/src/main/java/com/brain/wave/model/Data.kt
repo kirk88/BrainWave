@@ -120,6 +120,12 @@ fun Map<String, List<Data>>.toHandledMap(): Map<String, List<Data>> {
         }
     }
 
+    Log.e("TAGTAG", "size: ${
+        dataMap.values.joinToString{
+            it.size.toString()
+        }
+    }")
+
     return dataMap
 }
 
