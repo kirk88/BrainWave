@@ -5,6 +5,7 @@ import com.brain.wave.TAG
 import com.brain.wave.appContext
 import com.brain.wave.contracts.*
 import com.brain.wave.model.Data
+import com.brain.wave.model.toHandledMap
 import jxl.Workbook
 import jxl.write.Label
 import jxl.write.Number
@@ -29,8 +30,6 @@ object DataManager {
 
     private val dataList = mutableListOf<Data>()
 
-    private var dataMap: Map<String, List<Data>>? = null
-
     private val lock = Any()
 
     @Volatile
@@ -53,7 +52,6 @@ object DataManager {
     fun beginAppend() {
         synchronized(lock) {
             dataList.clear()
-            dataMap = null
         }
         isBegin = true
         beginTime = System.currentTimeMillis()
@@ -67,14 +65,6 @@ object DataManager {
         }
     }
 
-    fun set(dataMap: Map<String, List<Data>>) {
-        if (!isBegin) return
-
-        synchronized(lock) {
-            this.dataMap = dataMap
-        }
-    }
-
     @OptIn(DelicateCoroutinesApi::class)
     fun endAppend() {
         isBegin = false
@@ -82,15 +72,13 @@ object DataManager {
 
         GlobalScope.launch(Dispatchers.IO) {
             synchronized(lock) {
-                if (dataMap != null) {
-                    writeExcel(dataMap!!)
-                } else if (dataList.isNotEmpty()) {
+                if (dataList.isNotEmpty()) {
                     val dataMap = mutableMapOf<String, MutableList<Data>>()
                     for (data in dataList) {
                         dataMap.getOrPut(data.type) { mutableListOf() }.add(data)
                     }
 
-                    writeExcel(dataMap)
+                    writeExcel(dataMap.toHandledMap())
                 }
             }
         }
@@ -156,7 +144,8 @@ object DataManager {
             }
 
             book.write()
-        } catch (_: Throwable) {
+        } catch (t: Throwable) {
+            Log.e(TAG, t.message, t)
         } finally {
             book?.close()
         }

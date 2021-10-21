@@ -7,7 +7,6 @@ import com.brain.wave.contracts.SPO2
 import com.brain.wave.contracts.TEMPERATURE
 import com.brain.wave.contracts.channelType
 import com.brain.wave.util.Algorithm
-import com.brain.wave.util.DataManager
 import com.brain.wave.util.IIRFilter
 import java.math.BigDecimal
 import java.math.MathContext
@@ -119,12 +118,6 @@ fun Map<String, List<Data>>.toHandledMap(): Map<String, List<Data>> {
             }
         }
     }
-
-    Log.e("TAGTAG", "size: ${
-        dataMap.values.joinToString{
-            it.size.toString()
-        }
-    }")
 
     return dataMap
 }
