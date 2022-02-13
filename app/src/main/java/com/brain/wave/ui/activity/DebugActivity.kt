@@ -195,7 +195,7 @@ class DebugActivity : AppCompatActivity() {
                             textView.append(formatText("正在设置MTU"))
                         }
 
-                        val mtu = requestMtu(200)
+                        val mtu = requestMtu(247)
                         withContext(Dispatchers.Main) {
                             textView.append("\n")
                             textView.append(formatText("MTU设置成功：$mtu"))

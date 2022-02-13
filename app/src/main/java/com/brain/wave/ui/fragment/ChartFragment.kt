@@ -112,7 +112,6 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
                 }
 
                 dataMap = dataMapS.toHandledMap()
-                DataManager.set(dataMap)
             }
             dataMap
         }

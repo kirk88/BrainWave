@@ -15,20 +15,24 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.brain.wave.R
-import com.brain.wave.model.DataReader
 import com.brain.wave.model.parseRawData
 import com.brain.wave.ui.BaseActivity
 import com.brain.wave.ui.fragment.ChartFragment
 import com.brain.wave.util.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.nice.bluetooth.*
+import com.nice.bluetooth.Bluetooth
 import com.nice.bluetooth.Scanner
+import com.nice.bluetooth.ScannerLevel
 import com.nice.bluetooth.common.Advertisement
 import com.nice.bluetooth.common.BluetoothState
 import com.nice.bluetooth.common.ConnectionState
+import com.nice.bluetooth.peripheral
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by MainScope() {
 
@@ -133,20 +137,6 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
             }
         }
 
-        TimeCounter.start()
-        DataManager.beginAppend()
-        var count = 0
-        DataReader.send {
-            if(count < 50){
-                chartFragment?.addChartData(it.data)
-                if(count == 49) {
-                    DataManager.endAppend()
-                }
-            }else{
-                DataReader.cancel()
-            }
-            count+=1
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -281,6 +271,7 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                         for (bytes in channel) {
                             val data = bytes.decodeToHexString().parseRawData()?.data
                             if (data != null) {
+                                DataManager.append(data)
                                 chartFragment?.addChartData(data)
                             }
                         }
