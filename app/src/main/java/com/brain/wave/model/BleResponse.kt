@@ -39,18 +39,18 @@ fun String.parseBleResponse(): BleResponse? {
         values.add(Value(list.subList(4, 6).hexToInt() * 0.0078125f, TEMPERATURE, 1))
 
         var value = list.subList(6, 10).hexToInt(32)
-        if (value != -999) {
+        if (value != -999) { // 无效的数据
             //血氧
             values.add(Value(value.toFloat(), SPO2, 2))
         }
 
         value = list.subList(10, 14).hexToInt(32)
-        if (value != -999) {
+        if (value != -999) { // 无效的数据
             //心率
             values.add(Value(value.toFloat(), PPG_IR_SIGNAL, 3))
         }
 
-        //通道
+        //通道1~6的10次采样数据
         for (index in 14..(list.size - 18) step 18) {
             val channelList = list.subList(index, index + 18)
 
