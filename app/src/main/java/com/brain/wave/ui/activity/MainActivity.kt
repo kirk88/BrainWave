@@ -15,7 +15,7 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.brain.wave.R
-import com.brain.wave.model.parseRawData
+import com.brain.wave.model.parseBleResponse
 import com.brain.wave.ui.BaseActivity
 import com.brain.wave.ui.fragment.ChartFragment
 import com.brain.wave.util.*
@@ -262,17 +262,17 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                 }
 
                 if (characteristic != null) {
-                    chartFragment?.clearChartData()
+                    chartFragment?.clearChartValues()
 
                     TimeCounter.start()
 
                     val channel = Channel<ByteArray>(Channel.UNLIMITED)
                     launch(Dispatchers.IO) {
                         for (bytes in channel) {
-                            val data = bytes.decodeToHexString().parseRawData()?.data
-                            if (data != null) {
-                                DataManager.append(data)
-                                chartFragment?.addChartData(data)
+                            val values = bytes.decodeToHexString().parseBleResponse()?.values
+                            if (values != null) {
+                                DataManager.append(values)
+                                chartFragment?.addChartValues(values)
                             }
                         }
                     }.invokeOnCompletion {

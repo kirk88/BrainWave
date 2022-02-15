@@ -9,7 +9,7 @@ import com.brain.wave.contracts.CHANNEL
 import com.brain.wave.contracts.PPG_IR_SIGNAL
 import com.brain.wave.contracts.SPO2
 import com.brain.wave.contracts.TEMPERATURE
-import com.brain.wave.model.Data
+import com.brain.wave.model.Value
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.XAxis.XAxisPosition
@@ -25,7 +25,7 @@ import com.github.mikephil.charting.utils.Transformer
 import com.github.mikephil.charting.utils.ViewPortHandler
 import java.math.RoundingMode
 
-class MyLineChart @JvmOverloads constructor(
+class BWLineChart @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : LineChart(context, attrs, defStyleAttr) {
 
@@ -91,9 +91,9 @@ class MyLineChart @JvmOverloads constructor(
 
     }
 
-    fun setDataList(type: String, dataList: List<Data>, seconds: Int) {
+    fun setDataList(type: String, values: List<Value>, seconds: Int) {
         val dataSet = LineDataSet(null, "main").apply {
-            for ((index, y) in dataList.withIndex()) {
+            for ((index, y) in values.withIndex()) {
                 times.getOrPut(index) { seconds }
                 addEntry(Entry(index.toFloat(), y.value))
             }

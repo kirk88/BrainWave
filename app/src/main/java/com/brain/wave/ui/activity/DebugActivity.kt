@@ -4,7 +4,9 @@ import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import android.widget.*
+import android.widget.BaseAdapter
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -238,7 +240,7 @@ class DebugActivity : AppCompatActivity() {
         }
 
         val service = peripheral.services.find { service ->
-            service.serviceUuid.toString().contains("ffe0", true)
+            service.serviceUuid.toString().contains("6E400001", true)
         }
 
         if (service != null) {
@@ -249,7 +251,7 @@ class DebugActivity : AppCompatActivity() {
         }
 
         val characteristic = service?.characteristics?.find { characteristic ->
-            characteristic.characteristicUuid.toString().contains("ffe1", true)
+            characteristic.characteristicUuid.toString().contains("6E400003", true)
         }
 
         if (characteristic != null) {

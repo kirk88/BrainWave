@@ -19,12 +19,12 @@ object DataReader {
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    fun send(block: (RawData) -> Unit) {
+    fun send(block: (BleResponse) -> Unit) {
         job = GlobalScope.launch {
             for (line in lines){
                 delay(33)
 
-                line.parseRawData()?.let { block(it) }
+                line.parseBleResponse()?.let { block(it) }
             }
         }
     }
