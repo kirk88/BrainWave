@@ -56,7 +56,7 @@ fun String.parseBleResponse(): BleResponse? {
 
             var count = 1
             for (i in 0..(channelList.size - 3) step 3) {
-                value = channelList.subList(i, i + 3).hexToInt()
+                value = channelList.subList(i, i + 3).hexToInt(32)
                 values.add(Value(value.toFloat(), channelType(count), count + 3))
                 count += 1
             }
@@ -77,4 +77,4 @@ private fun List<String>.hexToInt(radix: Int = 16): Int {
     return toHexString().hexToInt(radix)
 }
 
-private fun List<String>.toHexString() = reversed().joinToString("")
+private fun List<String>.toHexString() = reversed().joinToString(separator = "")
