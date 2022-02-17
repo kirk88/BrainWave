@@ -78,8 +78,6 @@ class BWLineChart @JvmOverloads constructor(
             axisLineColor = darkLineColor
             zeroLineColor = darkLineColor
             textColor = lineColor
-
-            labelCount = 3
         }
 
         axisRight.apply {
@@ -108,6 +106,7 @@ class BWLineChart @JvmOverloads constructor(
             }
             setDrawCircleHole(false)
             setCircleColor(darkLineColor)
+            lineWidth = 1f
             circleRadius = 2f
             valueTextColor = lineColor
             valueTextSize = 6f
@@ -139,39 +138,35 @@ class BWLineChart @JvmOverloads constructor(
         when (type) {
             TEMPERATURE -> {
                 xAxis.apply {
-                    granularity = 20f
                     setLabelCount(3, true)
                     valueFormatter = XAxisValueFormatter(times)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("℃")
+                axisLeft.valueFormatter = LeftAxisValueFormatter("℃", scale = 2)
                 setVisibleXRange(1f, 20f)
             }
             SPO2 -> {
                 xAxis.apply {
-                    granularity = 20f
                     setLabelCount(3, true)
                     valueFormatter = XAxisValueFormatter(times)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("%")
+                axisLeft.valueFormatter = LeftAxisValueFormatter("%", scale = 1)
                 setVisibleXRange(1f, 20f)
             }
             PPG_IR_SIGNAL -> {
                 xAxis.apply {
-                    granularity = 20f
                     setLabelCount(3, true)
                     valueFormatter = XAxisValueFormatter(times)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("a.u.")
+                axisLeft.valueFormatter = LeftAxisValueFormatter("a.u.", scale = 0)
                 setVisibleXRange(1f, 20f)
             }
             else -> {
                 xAxis.apply {
-                    granularity = 140f
                     setLabelCount(3, true)
                     valueFormatter = XAxisValueFormatter(times)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("uV")
-                setVisibleXRange(1f, 140f)
+                axisLeft.valueFormatter = LeftAxisValueFormatter("uV", scale = 0)
+                setVisibleXRange(1f, 1000f)
             }
         }
     }
@@ -186,11 +181,15 @@ class BWLineChart @JvmOverloads constructor(
         }
     }
 
-    private class LeftAxisValueFormatter(private val unit: String) : ValueFormatter() {
+    private class LeftAxisValueFormatter(
+        private val unit: String,
+        private val scale: Int
+    ) : ValueFormatter() {
         override fun getFormattedValue(value: Float): String {
             if (value == 0f) return "0$unit"
-            return value.toBigDecimal().setScale(2, RoundingMode.HALF_UP)
-                .stripTrailingZeros().toPlainString() + unit
+            if (scale == 0) return value.toInt().toString() + unit
+            return value.toBigDecimal().setScale(scale, RoundingMode.HALF_UP)
+                .toPlainString() + unit
         }
     }
 

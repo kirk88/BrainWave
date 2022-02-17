@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.brain.wave.R
 import com.brain.wave.TAG
+import com.brain.wave.contracts.TIME
 import com.brain.wave.model.Value
 import com.brain.wave.ui.widget.BWLineChart
 import com.brain.wave.util.TimeCounter
@@ -45,8 +46,8 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
     fun addChartValuesFromFile(file: File) {
         progressBar?.show()
 
-        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, _ ->
-            Log.e(TAG, "add data from file failed.")
+        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, e ->
+            Log.e(TAG, "add data from file failed.", e)
         }) {
             delay(400)
 
@@ -68,8 +69,8 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
     fun addAllChartValues(valuesList: List<List<Value>>) {
         if (valuesList.isEmpty()) return
 
-        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, _ ->
-            Log.e(TAG, "add all chart data failed.")
+        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, e ->
+            Log.e(TAG, "add all chart data failed.", e)
         }) {
             val valuesMap = valuesList.toValuesMap()
             renderView(valuesMap, true)
@@ -79,8 +80,8 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
     fun addChartValues(values: List<Value>) {
         if (values.isEmpty()) return
 
-        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, _ ->
-            Log.e(TAG, "add chart data failed.")
+        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, e ->
+            Log.e(TAG, "add chart data failed.", e)
         }) {
             val dataMap = listOf(values).toValuesMap()
             renderView(dataMap, true)
@@ -136,6 +137,8 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
         override fun run() {
             val seconds = TimeCounter.seconds
             for ((type, values) in valuesMap) {
+                if (type == TIME) continue
+
                 val itemView = container.findViewWithTag(type)
                     ?: layoutInflater.inflate(R.layout.item_chart, container, false).also {
                         it.tag = type
