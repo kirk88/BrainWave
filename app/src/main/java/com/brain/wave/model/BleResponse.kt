@@ -3,6 +3,7 @@ package com.brain.wave.model
 import android.util.Log
 import com.brain.wave.TAG
 import com.brain.wave.contracts.*
+import java.math.RoundingMode
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -16,8 +17,20 @@ data class BleResponse(
 )
 
 data class Value(
-    val value: Float, val type: String, val order: Int
-)
+    val value: Long,
+    val type: String,
+    val order: Int
+) {
+
+    val floatValue: Float = if (type == TEMPERATURE) {
+        value / 10000000F
+    } else {
+        value.toFloat()
+    }
+
+    val doubleValue: Double = floatValue.toDouble()
+
+}
 
 fun ByteArray.parseBleResponse(): BleResponse? {
     return try {
@@ -30,21 +43,23 @@ fun ByteArray.parseBleResponse(): BleResponse? {
         val values = mutableListOf<Value>()
 
         //时间
-        values.add(Value(System.currentTimeMillis().toFloat(), TIME, 0))
+        val timeValue = Value(System.currentTimeMillis(), TIME, 0)
+        repeat(10) { values.add(timeValue) }
 
         //温度
-        values.add(Value(toInt(4, 6) * 0.0078125f, TEMPERATURE, 1))
+        val temperature = toInt(4, 6) * 78125L
+        values.add(Value(temperature, TEMPERATURE, 1))
 
         var value = toInt(6, 10)
         if (value != -999) { // 无效的数据
             //血氧
-            values.add(Value(value.toFloat(), SPO2, 2))
+            values.add(Value(value.toLong(), SPO2, 2))
         }
 
         value = toInt(10, 14)
         if (value != -999) { // 无效的数据
             //心率
-            values.add(Value(value.toFloat(), PPG_IR_SIGNAL, 3))
+            values.add(Value(value.toLong(), PPG_IR_SIGNAL, 3))
         }
 
         //通道1~6的10次采样数据
@@ -54,7 +69,7 @@ fun ByteArray.parseBleResponse(): BleResponse? {
             var count = 1
             for (i in 0..(channelBytes.size - 3) step 3) {
                 value = channelBytes.toInt(i, i + 3)
-                values.add(Value(value.toFloat(), channelType(count), count + 3))
+                values.add(Value(value.toLong(), channelType(count), count + 3))
                 count += 1
             }
         }
@@ -94,4 +109,6 @@ private fun ByteArray.toInt(
         else -> 0
     }
 }
+
+
 

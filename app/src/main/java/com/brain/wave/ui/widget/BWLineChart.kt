@@ -60,21 +60,30 @@ class BWLineChart @JvmOverloads constructor(
         })
 
         xAxis.apply {
+            setDrawGridLines(false)
+            setAvoidFirstLastClipping(true)
+
+            enableGridDashedLine(4f, 2f, 2f)
+
+            gridLineWidth = 0.5f
             axisLineWidth = 1f
+            gridColor = darkLineColor
             axisLineColor = darkLineColor
             textColor = lineColor
 
-            setDrawGridLines(false)
             position = XAxisPosition.BOTH_SIDED
-
-            setAvoidFirstLastClipping(true)
         }
 
         axisLeft.apply {
             setDrawZeroLine(false)
-            setDrawGridLines(false)
+            setDrawGridLines(true)
+
+            enableGridDashedLine(4f, 2f, 2f)
+
+            gridLineWidth = 0.5f
             axisLineWidth = 1f
             zeroLineWidth = 0.5f
+            gridColor = darkLineColor
             axisLineColor = darkLineColor
             zeroLineColor = darkLineColor
             textColor = lineColor
@@ -93,7 +102,7 @@ class BWLineChart @JvmOverloads constructor(
         val dataSet = LineDataSet(null, "main").apply {
             for ((index, y) in values.withIndex()) {
                 times.getOrPut(index) { seconds }
-                addEntry(Entry(index.toFloat(), y.value))
+                addEntry(Entry(index.toFloat(), y.floatValue))
             }
             mode = if (type.contains(CHANNEL)) {
                 setDrawCircles(false)
@@ -141,7 +150,7 @@ class BWLineChart @JvmOverloads constructor(
                     setLabelCount(3, true)
                     valueFormatter = XAxisValueFormatter(times)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("℃", scale = 2)
+                axisLeft.valueFormatter = LeftAxisValueFormatter("℃", isDecimal = true)
                 setVisibleXRange(1f, 20f)
             }
             SPO2 -> {
@@ -149,7 +158,7 @@ class BWLineChart @JvmOverloads constructor(
                     setLabelCount(3, true)
                     valueFormatter = XAxisValueFormatter(times)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("%", scale = 1)
+                axisLeft.valueFormatter = LeftAxisValueFormatter("%")
                 setVisibleXRange(1f, 20f)
             }
             PPG_IR_SIGNAL -> {
@@ -157,7 +166,7 @@ class BWLineChart @JvmOverloads constructor(
                     setLabelCount(3, true)
                     valueFormatter = XAxisValueFormatter(times)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("a.u.", scale = 0)
+                axisLeft.valueFormatter = LeftAxisValueFormatter("a.u.")
                 setVisibleXRange(1f, 20f)
             }
             else -> {
@@ -165,7 +174,7 @@ class BWLineChart @JvmOverloads constructor(
                     setLabelCount(3, true)
                     valueFormatter = XAxisValueFormatter(times)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("uV", scale = 0)
+                axisLeft.valueFormatter = LeftAxisValueFormatter("uV")
                 setVisibleXRange(1f, 1000f)
             }
         }
@@ -183,13 +192,12 @@ class BWLineChart @JvmOverloads constructor(
 
     private class LeftAxisValueFormatter(
         private val unit: String,
-        private val scale: Int
+        private val isDecimal: Boolean = false
     ) : ValueFormatter() {
         override fun getFormattedValue(value: Float): String {
             if (value == 0f) return "0$unit"
-            if (scale == 0) return value.toInt().toString() + unit
-            return value.toBigDecimal().setScale(scale, RoundingMode.HALF_UP)
-                .toPlainString() + unit
+            if (!isDecimal) return "${value.toInt()}$unit"
+            return "%.2f$unit".format(value)
         }
     }
 

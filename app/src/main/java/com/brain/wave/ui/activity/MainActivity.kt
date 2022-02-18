@@ -139,20 +139,20 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
         }
 
 
-        TimeCounter.start()
-        DataManager.beginAppend()
-        DataReader.send(
-            {
-                delay(100L)
-
-                DataManager.append(it.values)
-
-                chartFragment?.addChartValues(it.values)
-            },
-            {
-                DataManager.endAppend()
-            }
-        )
+//        TimeCounter.start()
+//        DataManager.beginAppend()
+//        DataReader.send(
+//            {
+//                delay(100L)
+//
+//                DataManager.append(it.values)
+//
+//                chartFragment?.addChartValues(it.values)
+//            },
+//            {
+//                DataManager.endAppend()
+//            }
+//        )
 
     }
 
@@ -271,11 +271,11 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                 peripheral.connect()
 
                 val service = peripheral.services.find { service ->
-                    service.serviceUuid.toString().contains("ffe0", true)
+                    service.serviceUuid.toString().contains("6E400001", true)
                 }
 
                 val characteristic = service?.characteristics?.find { characteristic ->
-                    characteristic.characteristicUuid.toString().contains("ffe1", true)
+                    characteristic.characteristicUuid.toString().contains("6E400003", true)
                 }
 
                 if (characteristic != null) {

@@ -100,34 +100,35 @@ object DataManager {
             var n = 1
 
             var list = valuesMap[TIME].orEmpty()
-            for ((index, value) in list.withIndex()) {
-                val prevValue = list.getOrNull(index - 1)
-                val timeMillis = if (prevValue == null) 0L
-                else (value.value - prevValue.value).toLong()
-                sheet.addCell(Label(0, n, timeFormat.format(timeMillis)))
-                n += 1
+            if (list.isNotEmpty()) {
+                val startTimeMillis = list.first().value
+                for (value in list) {
+                    val timeMillis = value.value - startTimeMillis
+                    sheet.addCell(Label(0, n, timeFormat.format(timeMillis)))
+                    n += 1
+                }
             }
 
-            val step = 7
+            val step = 10
 
             n = 1
             list = valuesMap[TEMPERATURE].orEmpty()
             for (value in list) {
-                sheet.addCell(Number(1, n, value.value.toDouble()))
+                sheet.addCell(Number(1, n, value.doubleValue))
                 n += step
             }
 
             n = 1
             list = valuesMap[SPO2].orEmpty()
             for (value in list) {
-                sheet.addCell(Number(2, n, value.value.toDouble()))
+                sheet.addCell(Number(2, n, value.doubleValue))
                 n += step
             }
 
             n = 1
             list = valuesMap[PPG_IR_SIGNAL].orEmpty()
             for (value in list) {
-                sheet.addCell(Number(3, n, value.value.toDouble()))
+                sheet.addCell(Number(3, n, value.doubleValue))
                 n += step
             }
 
@@ -135,7 +136,7 @@ object DataManager {
             for (count in 1..6) {
                 list = valuesMap[channelType(count)].orEmpty()
                 for ((index, value) in list.withIndex()) {
-                    sheet.addCell(Number(column, 1 + index, value.value.toDouble()))
+                    sheet.addCell(Number(column, 1 + index, value.doubleValue))
                 }
                 column += 1
             }
