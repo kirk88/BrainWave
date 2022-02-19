@@ -3,7 +3,6 @@ package com.brain.wave.model
 import android.util.Log
 import com.brain.wave.TAG
 import com.brain.wave.contracts.*
-import java.math.RoundingMode
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -19,8 +18,13 @@ data class BleResponse(
 data class Value(
     val value: Long,
     val type: String,
-    val order: Int
+    val order: Int,
+    val timeMillis: Long
 ) {
+
+    val isValid: Boolean = if (type != SPO2 && type != PPG_IR_SIGNAL) {
+        true
+    } else value != -999L
 
     val floatValue: Float = if (type == TEMPERATURE) {
         value / 10000000F
@@ -42,25 +46,23 @@ fun ByteArray.parseBleResponse(): BleResponse? {
 
         val values = mutableListOf<Value>()
 
+        val timeMillis = System.currentTimeMillis()
+
         //时间
-        val timeValue = Value(System.currentTimeMillis(), TIME, 0)
+        val timeValue = Value(timeMillis, TIME, 0, timeMillis = timeMillis)
         repeat(10) { values.add(timeValue) }
 
         //温度
         val temperature = toInt(4, 6) * 78125L
-        values.add(Value(temperature, TEMPERATURE, 1))
+        values.add(Value(temperature, TEMPERATURE, 1, timeMillis = timeMillis))
 
         var value = toInt(6, 10)
-        if (value != -999) { // 无效的数据
-            //血氧
-            values.add(Value(value.toLong(), SPO2, 2))
-        }
+        //血氧
+        values.add(Value(value.toLong(), SPO2, 2, timeMillis = timeMillis))
 
         value = toInt(10, 14)
-        if (value != -999) { // 无效的数据
-            //心率
-            values.add(Value(value.toLong(), PPG_IR_SIGNAL, 3))
-        }
+        //心率
+        values.add(Value(value.toLong(), PPG_IR_SIGNAL, 3, timeMillis = timeMillis))
 
         //通道1~6的10次采样数据
         for (index in 14..(size - 18) step 18) {
@@ -69,7 +71,14 @@ fun ByteArray.parseBleResponse(): BleResponse? {
             var count = 1
             for (i in 0..(channelBytes.size - 3) step 3) {
                 value = channelBytes.toInt(i, i + 3)
-                values.add(Value(value.toLong(), channelType(count), count + 3))
+                values.add(
+                    Value(
+                        value.toLong(),
+                        channelType(count),
+                        count + 3,
+                        timeMillis = timeMillis
+                    )
+                )
                 count += 1
             }
         }

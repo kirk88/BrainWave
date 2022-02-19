@@ -16,7 +16,6 @@ import com.brain.wave.TAG
 import com.brain.wave.contracts.TIME
 import com.brain.wave.model.Value
 import com.brain.wave.ui.widget.BWLineChart
-import com.brain.wave.util.TimeCounter
 import com.brain.wave.util.getDataList
 import kotlinx.coroutines.*
 import java.io.File
@@ -135,7 +134,6 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
     ) : Runnable {
 
         override fun run() {
-            val seconds = TimeCounter.seconds
             for ((type, values) in valuesMap) {
                 if (type == TIME) continue
 
@@ -148,7 +146,7 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
                 val titleView = itemView.findViewById<TextView>(R.id.title)
                 val chartView = itemView.findViewById<BWLineChart>(R.id.chart)
                 titleView.text = type
-                chartView.setDataList(type, values.toList(), seconds)
+                chartView.setDataList(type, values.toList())
                 if (moveToEnd) {
                     chartView.moveToEnd()
                 } else {

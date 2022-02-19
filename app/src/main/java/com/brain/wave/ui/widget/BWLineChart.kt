@@ -36,7 +36,7 @@ class BWLineChart @JvmOverloads constructor(
         ContextCompat.getColor(context, R.color.line_dark)
     }
 
-    private val times = mutableMapOf<Int, Int>()
+    private val valuesCache = mutableListOf<Value>()
 
     init {
         mXAxisRenderer = MyXAxisRenderer(mViewPortHandler, mXAxis, mLeftAxisTransformer)
@@ -98,11 +98,18 @@ class BWLineChart @JvmOverloads constructor(
 
     }
 
-    fun setDataList(type: String, values: List<Value>, seconds: Int) {
+    fun setDataList(type: String, values: List<Value>) {
+        this.valuesCache.clear()
+        this.valuesCache.addAll(values)
+
+        val validValues = values.filter { it.isValid }
+        if(validValues.isEmpty()){
+            return
+        }
+
         val dataSet = LineDataSet(null, "main").apply {
-            for ((index, y) in values.withIndex()) {
-                times.getOrPut(index) { seconds }
-                addEntry(Entry(index.toFloat(), y.floatValue))
+            for ((index, value) in validValues.withIndex()) {
+                addEntry(Entry(index.toFloat(), value.floatValue, value))
             }
             mode = if (type.contains(CHANNEL)) {
                 setDrawCircles(false)
@@ -138,17 +145,12 @@ class BWLineChart @JvmOverloads constructor(
         moveViewToX(dataSet.entryCount.toFloat())
     }
 
-    override fun clear() {
-        super.clear()
-        times.clear()
-    }
-
     private fun updateChartWithType(type: String) {
         when (type) {
             TEMPERATURE -> {
                 xAxis.apply {
                     setLabelCount(3, true)
-                    valueFormatter = XAxisValueFormatter(times)
+                    valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("℃", isDecimal = true)
                 setVisibleXRange(1f, 20f)
@@ -156,7 +158,7 @@ class BWLineChart @JvmOverloads constructor(
             SPO2 -> {
                 xAxis.apply {
                     setLabelCount(3, true)
-                    valueFormatter = XAxisValueFormatter(times)
+                    valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("%")
                 setVisibleXRange(1f, 20f)
@@ -164,7 +166,7 @@ class BWLineChart @JvmOverloads constructor(
             PPG_IR_SIGNAL -> {
                 xAxis.apply {
                     setLabelCount(3, true)
-                    valueFormatter = XAxisValueFormatter(times)
+                    valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("a.u.")
                 setVisibleXRange(1f, 20f)
@@ -172,7 +174,7 @@ class BWLineChart @JvmOverloads constructor(
             else -> {
                 xAxis.apply {
                     setLabelCount(3, true)
-                    valueFormatter = XAxisValueFormatter(times)
+                    valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("uV")
                 setVisibleXRange(1f, 1000f)
@@ -180,13 +182,15 @@ class BWLineChart @JvmOverloads constructor(
         }
     }
 
-    private class XAxisValueFormatter(private val times: Map<Int, Int>) : ValueFormatter() {
+    private class XAxisValueFormatter(private val values: List<Value>) : ValueFormatter() {
+
         override fun getFormattedValue(value: Float): String {
             val index = value.toInt()
             if (index in 1..3) return ""
-            return times.getOrElse(index) { 0 }.let {
-                if (index != 0 && it == 0) "" else it.toString() + "s"
-            }
+            val firstValue = values.getOrNull(0) ?: return ""
+            val targetValue = values.filter { it.isValid }.getOrNull(index) ?: return ""
+            val seconds = (targetValue.timeMillis - firstValue.timeMillis) / 1000
+            return "${seconds}s"
         }
     }
 

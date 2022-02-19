@@ -19,7 +19,10 @@ import com.brain.wave.model.DataReader
 import com.brain.wave.model.parseBleResponse
 import com.brain.wave.ui.BaseActivity
 import com.brain.wave.ui.fragment.ChartFragment
-import com.brain.wave.util.*
+import com.brain.wave.util.DataManager
+import com.brain.wave.util.setupActionBar
+import com.brain.wave.util.showSnackbar
+import com.brain.wave.util.toAppSetting
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.nice.bluetooth.Bluetooth
 import com.nice.bluetooth.Scanner
@@ -138,8 +141,6 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
             }
         }
 
-
-//        TimeCounter.start()
 //        DataManager.beginAppend()
 //        DataReader.send(
 //            {
@@ -153,7 +154,6 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
 //                DataManager.endAppend()
 //            }
 //        )
-
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -281,8 +281,6 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                 if (characteristic != null) {
                     chartFragment?.clearChartValues()
 
-                    TimeCounter.start()
-
                     val channel = Channel<ByteArray>(Channel.UNLIMITED)
                     launch(Dispatchers.IO) {
                         for (bytes in channel) {
@@ -292,8 +290,6 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                                 chartFragment?.addChartValues(values)
                             }
                         }
-                    }.invokeOnCompletion {
-                        TimeCounter.stop()
                     }
 
                     peripheral.observe(characteristic).collect {
