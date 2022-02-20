@@ -238,7 +238,7 @@ class DebugActivity : AppCompatActivity() {
         }
 
         val service = peripheral.services.find { service ->
-            service.serviceUuid.toString().contains("ffe0", true)
+            service.serviceUuid.toString().contains("6E400001", true)
         }
 
         if (service != null) {
@@ -249,7 +249,7 @@ class DebugActivity : AppCompatActivity() {
         }
 
         val characteristic = service?.characteristics?.find { characteristic ->
-            characteristic.characteristicUuid.toString().contains("ffe1", true)
+            characteristic.characteristicUuid.toString().contains("6E400003", true)
         }
 
         if (characteristic != null) {

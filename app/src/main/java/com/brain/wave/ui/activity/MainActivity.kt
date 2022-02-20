@@ -222,7 +222,7 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
             }) {
                 val peripheral = peripheral(advertisement) {
                     onConnected {
-                        requestMtu(500)
+                        requestMtu(247)
                     }
                 }
 
