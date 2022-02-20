@@ -21,9 +21,9 @@
         android:textColor="@color/white"
         tools:text="标题"/>
 
-    <com.brain.wave.ui.widget.MyLineChart
+    <com.brain.wave.ui.widget.BWLineChart
         android:id="@+id/chart"
         android:layout_width="match_parent"
-        android:layout_height="96dp"/>
+        android:layout_height="128dp"/>
 
 </LinearLayout>

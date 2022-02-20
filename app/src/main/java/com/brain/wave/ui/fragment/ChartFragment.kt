@@ -13,11 +13,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.brain.wave.R
 import com.brain.wave.TAG
-import com.brain.wave.model.Data
-import com.brain.wave.model.toHandledMap
-import com.brain.wave.ui.widget.MyLineChart
-import com.brain.wave.util.DataManager
-import com.brain.wave.util.TimeCounter
+import com.brain.wave.contracts.TIME
+import com.brain.wave.model.Value
+import com.brain.wave.ui.widget.BWLineChart
 import com.brain.wave.util.getDataList
 import kotlinx.coroutines.*
 import java.io.File
@@ -28,7 +26,7 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
     private var progressBar: ContentLoadingProgressBar? = null
     private var emptyView: View? = null
 
-    private val dataMapS = linkedMapOf<String, MutableList<Data>>()
+    private val cachedValuesMap = linkedMapOf<String, MutableList<Value>>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         chartContainer = view.findViewById(R.id.chart_container)
@@ -40,15 +38,15 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
         if (filePath.isNullOrBlank()) {
             emptyView?.isVisible = true
         } else {
-            addFromFile(File(filePath))
+            addChartValuesFromFile(File(filePath))
         }
     }
 
-    fun addFromFile(file: File) {
+    fun addChartValuesFromFile(file: File) {
         progressBar?.show()
 
-        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, _ ->
-            Log.e(TAG, "add data from file failed.")
+        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, e ->
+            Log.e(TAG, "add data from file failed.", e)
         }) {
             delay(400)
 
@@ -59,7 +57,7 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
             if (dataList.isEmpty()) {
                 emptyView?.isVisible = true
             } else {
-                val dataMap = handleDataListS(dataList)
+                val dataMap = dataList.toValuesMap()
                 renderView(dataMap)
             }
 
@@ -67,77 +65,78 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
         }
     }
 
-    fun addAllChartData(dataList: List<List<Data>>) {
-        if (dataList.isEmpty()) return
+    fun addAllChartValues(valuesList: List<List<Value>>) {
+        if (valuesList.isEmpty()) return
 
-        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, _ ->
-            Log.e(TAG, "add all chart data failed.")
+        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, e ->
+            Log.e(TAG, "add all chart data failed.", e)
         }) {
-            val dataMap = handleDataListS(dataList)
+            val valuesMap = valuesList.toValuesMap()
+            renderView(valuesMap, true)
+        }
+    }
+
+    fun addChartValues(values: List<Value>) {
+        if (values.isEmpty()) return
+
+        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, e ->
+            Log.e(TAG, "add chart data failed.", e)
+        }) {
+            val dataMap = listOf(values).toValuesMap()
             renderView(dataMap, true)
         }
     }
 
-    fun addChartData(dataList: List<Data>) {
-        if (dataList.isEmpty()) return
-
-        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, _ ->
-            Log.e(TAG, "add chart data failed.")
-        }) {
-            val dataMap = handleDataListS(listOf(dataList))
-            renderView(dataMap, true)
-        }
-    }
-
-    fun clearChartData() {
-        synchronized(dataMapS) {
-            dataMapS.clear()
+    fun clearChartValues() {
+        synchronized(cachedValuesMap) {
+            cachedValuesMap.clear()
         }
 
         lifecycleScope.launch {
             chartContainer?.forEach {
-                it.findViewById<MyLineChart>(R.id.chart)?.clear()
+                it.findViewById<BWLineChart>(R.id.chart)?.clear()
             }
         }
     }
 
-    private suspend fun handleDataListS(dataListS: List<List<Data>>): Map<String, List<Data>> =
+    private suspend fun List<List<Value>>.toValuesMap(): Map<String, List<Value>> =
         withContext(Dispatchers.IO) {
-            val dataMap: Map<String, List<Data>>
-            synchronized(dataMapS) {
-                for (dataList in dataListS) {
+            val valuesMap: Map<String, List<Value>>
+            synchronized(cachedValuesMap) {
+                for (dataList in this@toValuesMap) {
                     for (data in dataList) {
-                        dataMapS.getOrPut(data.type) { mutableListOf() }.add(data)
+                        cachedValuesMap.getOrPut(data.type) { mutableListOf() }.add(data)
                     }
                 }
 
-                dataMap = dataMapS.toHandledMap()
+                valuesMap = cachedValuesMap.toMap()
             }
-            dataMap
+            valuesMap
         }
 
 
-    private fun renderView(dataMap: Map<String, List<Data>>, moveToEnd: Boolean = false) {
+    private fun renderView(valuesMap: Map<String, List<Value>>, moveToEnd: Boolean = false) {
         val container = chartContainer ?: return
 
-        if (dataMap.isNotEmpty()) {
+        if (valuesMap.isNotEmpty()) {
             emptyView?.isVisible = false
         }
 
-        container.post(RenderViewRunnable(layoutInflater, container, dataMap, moveToEnd))
+        container.post(RenderViewRunnable(layoutInflater, container, valuesMap, moveToEnd))
     }
 
 
     private class RenderViewRunnable(
         private val layoutInflater: LayoutInflater,
         private val container: ViewGroup,
-        private val dataMap: Map<String, List<Data>>,
+        private val valuesMap: Map<String, List<Value>>,
         private val moveToEnd: Boolean
     ) : Runnable {
 
         override fun run() {
-            val seconds = TimeCounter.seconds
-            for ((type, list) in dataMap) {
+            for ((type, values) in valuesMap) {
+                if (type == TIME) continue
+
                 val itemView = container.findViewWithTag(type)
                     ?: layoutInflater.inflate(R.layout.item_chart, container, false).also {
                         it.tag = type
@@ -145,9 +144,9 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
                     }
 
                 val titleView = itemView.findViewById<TextView>(R.id.title)
-                val chartView = itemView.findViewById<MyLineChart>(R.id.chart)
+                val chartView = itemView.findViewById<BWLineChart>(R.id.chart)
                 titleView.text = type
-                chartView.setDataList(type, ArrayList(list), seconds)
+                chartView.setDataList(type, values.toList())
                 if (moveToEnd) {
                     chartView.moveToEnd()
                 } else {

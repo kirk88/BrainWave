@@ -4,8 +4,7 @@ import android.util.Log
 import com.brain.wave.TAG
 import com.brain.wave.appContext
 import com.brain.wave.contracts.*
-import com.brain.wave.model.Data
-import com.brain.wave.model.toHandledMap
+import com.brain.wave.model.Value
 import jxl.Workbook
 import jxl.write.Label
 import jxl.write.Number
@@ -18,7 +17,6 @@ import java.io.File
 import java.io.FileFilter
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.roundToLong
 
 
 object DataManager {
@@ -28,14 +26,12 @@ object DataManager {
     private val dateFormat = SimpleDateFormat("yyyyMMddHHmmss", Locale.ENGLISH)
     private val timeFormat = SimpleDateFormat("sss:SSS", Locale.ENGLISH)
 
-    private val dataList = mutableListOf<Data>()
+    private val dataList = mutableListOf<Value>()
 
     private val lock = Any()
 
     @Volatile
     private var isBegin = false
-    private var beginTime = 0L
-    private var endTime = 0L
 
     init {
         val dir = File(appContext.externalCacheDir ?: appContext.cacheDir, SAVE_DIR_NAME)
@@ -54,10 +50,9 @@ object DataManager {
             dataList.clear()
         }
         isBegin = true
-        beginTime = System.currentTimeMillis()
     }
 
-    fun append(list: List<Data>) {
+    fun append(list: List<Value>) {
         if (!isBegin) return
 
         synchronized(lock) {
@@ -68,23 +63,22 @@ object DataManager {
     @OptIn(DelicateCoroutinesApi::class)
     fun endAppend() {
         isBegin = false
-        endTime = System.currentTimeMillis()
 
         GlobalScope.launch(Dispatchers.IO) {
             synchronized(lock) {
                 if (dataList.isNotEmpty()) {
-                    val dataMap = mutableMapOf<String, MutableList<Data>>()
+                    val dataMap = mutableMapOf<String, MutableList<Value>>()
                     for (data in dataList) {
                         dataMap.getOrPut(data.type) { mutableListOf() }.add(data)
                     }
 
-                    writeExcel(dataMap.toHandledMap())
+                    writeExcel(dataMap)
                 }
             }
         }
     }
 
-    private fun writeExcel(dataMap: Map<String, List<Data>>) {
+    private fun writeExcel(valuesMap: Map<String, List<Value>>) {
         var book: WritableWorkbook? = null
         try {
             val file = File(dirPath, generateFileName())
@@ -92,7 +86,7 @@ object DataManager {
 
             book = Workbook.createWorkbook(file)
             val sheet = book.createSheet(dateFormat.format(Date()), 0)
-            sheet.addCell(Label(0, 0, "Time"))
+            sheet.addCell(Label(0, 0, TIME))
             sheet.addCell(Label(1, 0, TEMPERATURE))
             sheet.addCell(Label(2, 0, SPO2))
             sheet.addCell(Label(3, 0, PPG_IR_SIGNAL))
@@ -103,42 +97,46 @@ object DataManager {
             sheet.addCell(Label(8, 0, channelType(5)))
             sheet.addCell(Label(9, 0, channelType(6)))
 
-            val step = 7
-
             var n = 1
-            var list = dataMap[TEMPERATURE].orEmpty()
-            for (data in list) {
-                sheet.addCell(Number(1, n, data.value.toDouble()))
+
+            var list = valuesMap[TIME].orEmpty()
+            if (list.isNotEmpty()) {
+                val startTimeMillis = list.first().value
+                for (value in list) {
+                    val timeMillis = value.value - startTimeMillis
+                    sheet.addCell(Label(0, n, timeFormat.format(timeMillis)))
+                    n += 1
+                }
+            }
+
+            val step = 10
+
+            n = 1
+            list = valuesMap[TEMPERATURE].orEmpty()
+            for (value in list) {
+                sheet.addCell(Number(1, n, value.doubleValue))
                 n += step
             }
 
             n = 1
-            list = dataMap[SPO2].orEmpty()
-            for (data in list) {
-                sheet.addCell(Number(2, n, data.value.toDouble()))
+            list = valuesMap[SPO2].orEmpty()
+            for (value in list) {
+                sheet.addCell(Number(2, n, value.doubleValue))
                 n += step
             }
 
             n = 1
-            list = dataMap[PPG_IR_SIGNAL].orEmpty()
-            for (data in list) {
-                sheet.addCell(Number(3, n, data.value.toDouble()))
+            list = valuesMap[PPG_IR_SIGNAL].orEmpty()
+            for (value in list) {
+                sheet.addCell(Number(3, n, value.doubleValue))
                 n += step
             }
 
-            val interval = kotlin.runCatching {
-                ((endTime - beginTime) / dataMap[channelType(1)].orEmpty().size.toFloat()).roundToLong()
-            }.getOrDefault(5L)
-            var timeMillis = 0L
             var column = 4
             for (count in 1..6) {
-                list = dataMap[channelType(count)].orEmpty()
-                for ((index, data) in list.withIndex()) {
-                    if (count == 1) {
-                        sheet.addCell(Label(0, 1 + index, timeFormat.format(timeMillis)))
-                        timeMillis += interval
-                    }
-                    sheet.addCell(Number(column, 1 + index, data.value.toDouble()))
+                list = valuesMap[channelType(count)].orEmpty()
+                for ((index, value) in list.withIndex()) {
+                    sheet.addCell(Number(column, 1 + index, value.doubleValue))
                 }
                 column += 1
             }

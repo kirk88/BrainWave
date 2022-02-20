@@ -9,7 +9,7 @@ import com.brain.wave.contracts.CHANNEL
 import com.brain.wave.contracts.PPG_IR_SIGNAL
 import com.brain.wave.contracts.SPO2
 import com.brain.wave.contracts.TEMPERATURE
-import com.brain.wave.model.Data
+import com.brain.wave.model.Value
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.XAxis.XAxisPosition
@@ -25,7 +25,7 @@ import com.github.mikephil.charting.utils.Transformer
 import com.github.mikephil.charting.utils.ViewPortHandler
 import java.math.RoundingMode
 
-class MyLineChart @JvmOverloads constructor(
+class BWLineChart @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : LineChart(context, attrs, defStyleAttr) {
 
@@ -36,7 +36,7 @@ class MyLineChart @JvmOverloads constructor(
         ContextCompat.getColor(context, R.color.line_dark)
     }
 
-    private val times = mutableMapOf<Int, Int>()
+    private val valuesCache = mutableListOf<Value>()
 
     init {
         mXAxisRenderer = MyXAxisRenderer(mViewPortHandler, mXAxis, mLeftAxisTransformer)
@@ -60,26 +60,33 @@ class MyLineChart @JvmOverloads constructor(
         })
 
         xAxis.apply {
+            setDrawGridLines(false)
+            setAvoidFirstLastClipping(true)
+
+            enableGridDashedLine(4f, 2f, 2f)
+
+            gridLineWidth = 0.5f
             axisLineWidth = 1f
+            gridColor = darkLineColor
             axisLineColor = darkLineColor
             textColor = lineColor
 
-            setDrawGridLines(false)
             position = XAxisPosition.BOTH_SIDED
-
-            setAvoidFirstLastClipping(true)
         }
 
         axisLeft.apply {
             setDrawZeroLine(false)
-            setDrawGridLines(false)
+            setDrawGridLines(true)
+
+            enableGridDashedLine(4f, 2f, 2f)
+
+            gridLineWidth = 0.5f
             axisLineWidth = 1f
             zeroLineWidth = 0.5f
+            gridColor = darkLineColor
             axisLineColor = darkLineColor
             zeroLineColor = darkLineColor
             textColor = lineColor
-
-            labelCount = 3
         }
 
         axisRight.apply {
@@ -91,11 +98,18 @@ class MyLineChart @JvmOverloads constructor(
 
     }
 
-    fun setDataList(type: String, dataList: List<Data>, seconds: Int) {
+    fun setDataList(type: String, values: List<Value>) {
+        this.valuesCache.clear()
+        this.valuesCache.addAll(values)
+
+        val validValues = values.filter { it.isValid }
+        if(validValues.isEmpty()){
+            return
+        }
+
         val dataSet = LineDataSet(null, "main").apply {
-            for ((index, y) in dataList.withIndex()) {
-                times.getOrPut(index) { seconds }
-                addEntry(Entry(index.toFloat(), y.value))
+            for ((index, value) in validValues.withIndex()) {
+                addEntry(Entry(index.toFloat(), value.floatValue, value))
             }
             mode = if (type.contains(CHANNEL)) {
                 setDrawCircles(false)
@@ -108,6 +122,7 @@ class MyLineChart @JvmOverloads constructor(
             }
             setDrawCircleHole(false)
             setCircleColor(darkLineColor)
+            lineWidth = 1f
             circleRadius = 2f
             valueTextColor = lineColor
             valueTextSize = 6f
@@ -130,67 +145,63 @@ class MyLineChart @JvmOverloads constructor(
         moveViewToX(dataSet.entryCount.toFloat())
     }
 
-    override fun clear() {
-        super.clear()
-        times.clear()
-    }
-
     private fun updateChartWithType(type: String) {
         when (type) {
             TEMPERATURE -> {
                 xAxis.apply {
-                    granularity = 20f
                     setLabelCount(3, true)
-                    valueFormatter = XAxisValueFormatter(times)
+                    valueFormatter = XAxisValueFormatter(valuesCache)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("℃")
+                axisLeft.valueFormatter = LeftAxisValueFormatter("℃", isDecimal = true)
                 setVisibleXRange(1f, 20f)
             }
             SPO2 -> {
                 xAxis.apply {
-                    granularity = 20f
                     setLabelCount(3, true)
-                    valueFormatter = XAxisValueFormatter(times)
+                    valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("%")
                 setVisibleXRange(1f, 20f)
             }
             PPG_IR_SIGNAL -> {
                 xAxis.apply {
-                    granularity = 20f
                     setLabelCount(3, true)
-                    valueFormatter = XAxisValueFormatter(times)
+                    valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("a.u.")
                 setVisibleXRange(1f, 20f)
             }
             else -> {
                 xAxis.apply {
-                    granularity = 140f
                     setLabelCount(3, true)
-                    valueFormatter = XAxisValueFormatter(times)
+                    valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("uV")
-                setVisibleXRange(1f, 140f)
+                setVisibleXRange(1f, 1000f)
             }
         }
     }
 
-    private class XAxisValueFormatter(private val times: Map<Int, Int>) : ValueFormatter() {
+    private class XAxisValueFormatter(private val values: List<Value>) : ValueFormatter() {
+
         override fun getFormattedValue(value: Float): String {
             val index = value.toInt()
             if (index in 1..3) return ""
-            return times.getOrElse(index) { 0 }.let {
-                if (index != 0 && it == 0) "" else it.toString() + "s"
-            }
+            val firstValue = values.getOrNull(0) ?: return ""
+            val targetValue = values.filter { it.isValid }.getOrNull(index) ?: return ""
+            val seconds = (targetValue.timeMillis - firstValue.timeMillis) / 1000
+            return "${seconds}s"
         }
     }
 
-    private class LeftAxisValueFormatter(private val unit: String) : ValueFormatter() {
+    private class LeftAxisValueFormatter(
+        private val unit: String,
+        private val isDecimal: Boolean = false
+    ) : ValueFormatter() {
         override fun getFormattedValue(value: Float): String {
             if (value == 0f) return "0$unit"
-            return value.toBigDecimal().setScale(2, RoundingMode.HALF_UP)
-                .stripTrailingZeros().toPlainString() + unit
+            if (!isDecimal) return "${value.toInt()}$unit"
+            return "%.2f$unit".format(value)
         }
     }
 

@@ -15,10 +15,14 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.brain.wave.R
-import com.brain.wave.model.parseRawData
+import com.brain.wave.model.DataReader
+import com.brain.wave.model.parseBleResponse
 import com.brain.wave.ui.BaseActivity
 import com.brain.wave.ui.fragment.ChartFragment
-import com.brain.wave.util.*
+import com.brain.wave.util.DataManager
+import com.brain.wave.util.setupActionBar
+import com.brain.wave.util.showSnackbar
+import com.brain.wave.util.toAppSetting
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.nice.bluetooth.Bluetooth
 import com.nice.bluetooth.Scanner
@@ -137,6 +141,19 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
             }
         }
 
+//        DataManager.beginAppend()
+//        DataReader.send(
+//            {
+//                delay(100L)
+//
+//                DataManager.append(it.values)
+//
+//                chartFragment?.addChartValues(it.values)
+//            },
+//            {
+//                DataManager.endAppend()
+//            }
+//        )
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -254,29 +271,25 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                 peripheral.connect()
 
                 val service = peripheral.services.find { service ->
-                    service.serviceUuid.toString().contains("ffe0", true)
+                    service.serviceUuid.toString().contains("6E400001", true)
                 }
 
                 val characteristic = service?.characteristics?.find { characteristic ->
-                    characteristic.characteristicUuid.toString().contains("ffe1", true)
+                    characteristic.characteristicUuid.toString().contains("6E400003", true)
                 }
 
                 if (characteristic != null) {
-                    chartFragment?.clearChartData()
-
-                    TimeCounter.start()
+                    chartFragment?.clearChartValues()
 
                     val channel = Channel<ByteArray>(Channel.UNLIMITED)
                     launch(Dispatchers.IO) {
                         for (bytes in channel) {
-                            val data = bytes.decodeToHexString().parseRawData()?.data
-                            if (data != null) {
-                                DataManager.append(data)
-                                chartFragment?.addChartData(data)
+                            val values = bytes.parseBleResponse()?.values
+                            if (values != null) {
+                                DataManager.append(values)
+                                chartFragment?.addChartValues(values)
                             }
                         }
-                    }.invokeOnCompletion {
-                        TimeCounter.stop()
                     }
 
                     peripheral.observe(characteristic).collect {

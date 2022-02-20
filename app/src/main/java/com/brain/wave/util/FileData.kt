@@ -6,18 +6,18 @@ import android.os.Build
 import androidx.core.content.FileProvider
 import com.brain.wave.BuildConfig
 import com.brain.wave.appContext
-import com.brain.wave.model.Data
-import com.brain.wave.model.parseRawData
+import com.brain.wave.model.Value
+import com.brain.wave.model.parseBleResponse
 import java.io.File
 
 
-fun getDataList(file: File): List<List<Data>> {
+fun getDataList(file: File): List<List<Value>> {
     return file.runCatching {
         bufferedReader().use {
-            val list = mutableListOf<List<Data>>()
+            val list = mutableListOf<List<Value>>()
             var line = it.readLine()
             while (line != null) {
-                line.parseRawData()?.data?.let { data -> list.add(data) }
+                line.parseBleResponse()?.values?.let { data -> list.add(data) }
                 line = it.readLine()
             }
             list

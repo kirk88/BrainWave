@@ -2,11 +2,10 @@ package com.brain.wave.model
 
 import com.brain.wave.appContext
 import kotlinx.coroutines.*
-import java.util.concurrent.Executors
 
 object DataReader {
 
-    private val lines= mutableListOf<String>()
+    private val lines = mutableListOf<String>()
 
     private var job: Job? = null
 
@@ -19,13 +18,13 @@ object DataReader {
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    fun send(block: (RawData) -> Unit) {
+    fun send(block: suspend (BleResponse) -> Unit, onCompletion: (Throwable?) -> Unit = {}) {
         job = GlobalScope.launch {
-            for (line in lines){
-                delay(33)
-
-                line.parseRawData()?.let { block(it) }
+            for (line in lines) {
+                line.parseBleResponse()?.let { block(it) }
             }
+        }.apply {
+            invokeOnCompletion(onCompletion)
         }
     }
 

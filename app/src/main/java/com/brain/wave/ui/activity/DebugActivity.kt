@@ -1,10 +1,14 @@
 package com.brain.wave.ui.activity
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import android.widget.*
+import android.widget.BaseAdapter
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -24,6 +28,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 class DebugActivity : AppCompatActivity() {
 
@@ -94,6 +99,9 @@ class DebugActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menu.add("复制数据").apply {
+            setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+        }
         menu.add("开始扫描").apply {
             setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
         }
@@ -101,7 +109,19 @@ class DebugActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.title == "开始扫描") {
+        if (item.title == "复制数据") {
+            textView.text?.let {
+                val clipboard = getSystemService(CLIPBOARD_SERVICE) as? ClipboardManager
+                if (clipboard != null) {
+                    val clip = ClipData.newPlainText("脑电数据", it)
+                    clipboard.setPrimaryClip(clip)
+                    toast("复制成功")
+                } else {
+                    toast("复制失败")
+                }
+            }
+            return true
+        } else if (item.title == "开始扫描") {
             checkOrStartScan()
             return true
         } else if (item.itemId == android.R.id.home) {
