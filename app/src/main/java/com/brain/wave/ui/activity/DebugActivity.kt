@@ -257,7 +257,19 @@ class DebugActivity : AppCompatActivity() {
             textView.append(formatText("连接成功"))
         }
 
-        val service = peripheral.services.find { service ->
+        val services = peripheral.services
+        withContext(Dispatchers.Main) {
+            for (service in services) {
+                textView.append("\n")
+                textView.append(formatText("|---" + service.serviceUuid.toString()))
+                for (characteristic in service.characteristics) {
+                    textView.append("\n")
+                    textView.append(formatText("|------" + characteristic.characteristicUuid.toString()))
+                }
+            }
+        }
+
+        val service = services.find { service ->
             service.serviceUuid.toString().contains("6E400001", true)
         }
 

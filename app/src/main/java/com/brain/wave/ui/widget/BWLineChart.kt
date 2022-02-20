@@ -102,14 +102,9 @@ class BWLineChart @JvmOverloads constructor(
         this.valuesCache.clear()
         this.valuesCache.addAll(values)
 
-        val validValues = values.filter { it.isValid }
-        if(validValues.isEmpty()){
-            return
-        }
-
         val dataSet = LineDataSet(null, "main").apply {
-            for ((index, value) in validValues.withIndex()) {
-                addEntry(Entry(index.toFloat(), value.floatValue, value))
+            for ((index, value) in values.withIndex()) {
+                addEntry(Entry(index.toFloat(), if (value.isValid) value.floatValue else 0F, value))
             }
             mode = if (type.contains(CHANNEL)) {
                 setDrawCircles(false)
@@ -188,7 +183,7 @@ class BWLineChart @JvmOverloads constructor(
             val index = value.toInt()
             if (index in 1..3) return ""
             val firstValue = values.getOrNull(0) ?: return ""
-            val targetValue = values.filter { it.isValid }.getOrNull(index) ?: return ""
+            val targetValue = values.getOrNull(index) ?: return ""
             val seconds = (targetValue.timeMillis - firstValue.timeMillis) / 1000
             return "${seconds}s"
         }

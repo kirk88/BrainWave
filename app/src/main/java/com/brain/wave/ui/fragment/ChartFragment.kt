@@ -57,7 +57,7 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
             if (dataList.isEmpty()) {
                 emptyView?.isVisible = true
             } else {
-                val dataMap = dataList.toValuesMap()
+                val dataMap = addToValuesMap(dataList)
                 renderView(dataMap)
             }
 
@@ -71,7 +71,7 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
         lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, e ->
             Log.e(TAG, "add all chart data failed.", e)
         }) {
-            val valuesMap = valuesList.toValuesMap()
+            val valuesMap = addToValuesMap(valuesList)
             renderView(valuesMap, true)
         }
     }
@@ -82,7 +82,7 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
         lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, e ->
             Log.e(TAG, "add chart data failed.", e)
         }) {
-            val dataMap = listOf(values).toValuesMap()
+            val dataMap = addToValuesMap(listOf(values))
             renderView(dataMap, true)
         }
     }
@@ -99,11 +99,11 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
         }
     }
 
-    private suspend fun List<List<Value>>.toValuesMap(): Map<String, List<Value>> =
+    private suspend fun addToValuesMap(list: List<List<Value>>): Map<String, List<Value>> =
         withContext(Dispatchers.IO) {
             val valuesMap: Map<String, List<Value>>
             synchronized(cachedValuesMap) {
-                for (dataList in this@toValuesMap) {
+                for (dataList in list) {
                     for (data in dataList) {
                         cachedValuesMap.getOrPut(data.type) { mutableListOf() }.add(data)
                     }
