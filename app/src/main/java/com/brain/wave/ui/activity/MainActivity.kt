@@ -15,6 +15,7 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.brain.wave.R
+import com.brain.wave.model.BleResponse
 import com.brain.wave.model.DataReader
 import com.brain.wave.model.parseBleResponse
 import com.brain.wave.ui.BaseActivity
@@ -141,19 +142,19 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
             }
         }
 
-//        DataManager.beginAppend()
-//        DataReader.send(
-//            {
-//                delay(100L)
-//
-//                DataManager.append(it.values)
-//
-//                chartFragment?.addChartValues(it.values)
-//            },
-//            {
-//                DataManager.endAppend()
-//            }
-//        )
+        DataManager.beginAppend()
+        DataReader.send(
+            {
+                delay(100L)
+
+                DataManager.append(it.values)
+
+                chartFragment?.addChartValues(it.values)
+            },
+            {
+                DataManager.endAppend()
+            }
+        )
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -281,19 +282,17 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                 if (characteristic != null) {
                     chartFragment?.clearChartValues()
 
-                    val channel = Channel<ByteArray>(Channel.UNLIMITED)
+                    val channel = Channel<BleResponse>(Channel.UNLIMITED)
                     launch(Dispatchers.IO) {
-                        for (bytes in channel) {
-                            val values = bytes.parseBleResponse()?.values
-                            if (values != null) {
-                                DataManager.append(values)
-                                chartFragment?.addChartValues(values)
-                            }
+                        for (res in channel) {
+                            val values = res.values
+                            DataManager.append(values)
+                            chartFragment?.addChartValues(values)
                         }
                     }
 
                     peripheral.observe(characteristic).collect {
-                        channel.send(it)
+                        it.parseBleResponse()?.let { res -> channel.send(res) }
                     }
                 } else {
                     peripheral.disconnect()

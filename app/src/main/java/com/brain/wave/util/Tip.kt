@@ -16,7 +16,7 @@ fun Context.toast(message: CharSequence) {
 
 fun View.showSnackbar(@StringRes messageId: Int, duration: Int = Snackbar.LENGTH_SHORT): Snackbar {
     return Snackbar.make(this, messageId, duration).also {
-        it.view.findViewById<TextView>(R.id.snackbar_text).apply {
+        it.view.findViewById<TextView>(R.id.snackbar_text)?.apply {
             maxLines = 2
         }
         it.show()

@@ -24,6 +24,8 @@ import com.github.mikephil.charting.utils.MPPointF
 import com.github.mikephil.charting.utils.Transformer
 import com.github.mikephil.charting.utils.ViewPortHandler
 import java.math.RoundingMode
+import java.text.SimpleDateFormat
+import java.util.*
 
 class BWLineChart @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -144,7 +146,7 @@ class BWLineChart @JvmOverloads constructor(
         when (type) {
             TEMPERATURE -> {
                 xAxis.apply {
-                    setLabelCount(3, true)
+                    setLabelCount(5, true)
                     valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("℃", isDecimal = true)
@@ -152,7 +154,7 @@ class BWLineChart @JvmOverloads constructor(
             }
             SPO2 -> {
                 xAxis.apply {
-                    setLabelCount(3, true)
+                    setLabelCount(5, true)
                     valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("%")
@@ -160,7 +162,7 @@ class BWLineChart @JvmOverloads constructor(
             }
             PPG_IR_SIGNAL -> {
                 xAxis.apply {
-                    setLabelCount(3, true)
+                    setLabelCount(5, true)
                     valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("a.u.")
@@ -168,7 +170,7 @@ class BWLineChart @JvmOverloads constructor(
             }
             else -> {
                 xAxis.apply {
-                    setLabelCount(3, true)
+                    setLabelCount(5, true)
                     valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("uV")
@@ -179,13 +181,14 @@ class BWLineChart @JvmOverloads constructor(
 
     private class XAxisValueFormatter(private val values: List<Value>) : ValueFormatter() {
 
+        private val timeFormatter = SimpleDateFormat("mm:ss", Locale.getDefault())
+
         override fun getFormattedValue(value: Float): String {
             val index = value.toInt()
             if (index in 1..3) return ""
             val firstValue = values.getOrNull(0) ?: return ""
             val targetValue = values.getOrNull(index) ?: return ""
-            val seconds = (targetValue.timeMillis - firstValue.timeMillis) / 1000
-            return "${seconds}s"
+            return timeFormatter.format(targetValue.timeMillis - firstValue.timeMillis)
         }
     }
 

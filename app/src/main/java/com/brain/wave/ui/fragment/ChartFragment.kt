@@ -34,10 +34,7 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
         emptyView = view.findViewById(R.id.empty_view)
 
         val filePath = arguments?.getString("path")
-
-        if (filePath.isNullOrBlank()) {
-            emptyView?.isVisible = true
-        } else {
+        if(filePath != null){
             addChartValuesFromFile(File(filePath))
         }
     }
@@ -57,6 +54,8 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
             if (dataList.isEmpty()) {
                 emptyView?.isVisible = true
             } else {
+                emptyView?.isVisible = false
+
                 val dataMap = addToValuesMap(dataList)
                 renderView(dataMap)
             }
@@ -68,23 +67,15 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
     fun addAllChartValues(valuesList: List<List<Value>>) {
         if (valuesList.isEmpty()) return
 
-        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, e ->
-            Log.e(TAG, "add all chart data failed.", e)
-        }) {
-            val valuesMap = addToValuesMap(valuesList)
-            renderView(valuesMap, true)
-        }
+        val valuesMap = addToValuesMap(valuesList)
+        renderView(valuesMap, true)
     }
 
     fun addChartValues(values: List<Value>) {
         if (values.isEmpty()) return
 
-        lifecycleScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, e ->
-            Log.e(TAG, "add chart data failed.", e)
-        }) {
-            val dataMap = addToValuesMap(listOf(values))
-            renderView(dataMap, true)
-        }
+        val dataMap = addToValuesMap(listOf(values))
+        renderView(dataMap, true)
     }
 
     fun clearChartValues() {
@@ -99,30 +90,27 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
         }
     }
 
-    private suspend fun addToValuesMap(list: List<List<Value>>): Map<String, List<Value>> =
-        withContext(Dispatchers.IO) {
-            val valuesMap: Map<String, List<Value>>
-            synchronized(cachedValuesMap) {
-                for (dataList in list) {
-                    for (data in dataList) {
-                        cachedValuesMap.getOrPut(data.type) { mutableListOf() }.add(data)
-                    }
+    private fun addToValuesMap(list: List<List<Value>>): Map<String, List<Value>> {
+        val valuesMap: Map<String, List<Value>>
+        synchronized(cachedValuesMap) {
+            for (dataList in list) {
+                for (data in dataList) {
+                    cachedValuesMap.getOrPut(data.type) { mutableListOf() }.add(data)
                 }
-
-                valuesMap = cachedValuesMap.toMap()
             }
-            valuesMap
+
+            valuesMap = cachedValuesMap.toMap()
         }
+        return valuesMap
+    }
 
 
     private fun renderView(valuesMap: Map<String, List<Value>>, moveToEnd: Boolean = false) {
         val container = chartContainer ?: return
 
-        if (valuesMap.isNotEmpty()) {
-            emptyView?.isVisible = false
+        if (isAdded) {
+            container.post(RenderViewRunnable(layoutInflater, container, valuesMap, moveToEnd))
         }
-
-        container.post(RenderViewRunnable(layoutInflater, container, valuesMap, moveToEnd))
     }
 
 
