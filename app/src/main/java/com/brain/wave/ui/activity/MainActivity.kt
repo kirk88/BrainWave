@@ -16,7 +16,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.brain.wave.R
 import com.brain.wave.model.BleResponse
-import com.brain.wave.model.DataReader
 import com.brain.wave.model.parseBleResponse
 import com.brain.wave.ui.BaseActivity
 import com.brain.wave.ui.fragment.ChartFragment
@@ -142,19 +141,19 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
             }
         }
 
-        DataManager.beginAppend()
-        DataReader.send(
-            {
-                delay(100L)
-
-                DataManager.append(it.values)
-
-                chartFragment?.addChartValues(it.values)
-            },
-            {
-                DataManager.endAppend()
-            }
-        )
+//        DataManager.beginAppend()
+//        DataReader.send(
+//            {
+//                delay(100L)
+//
+//                DataManager.append(it.values)
+//
+//                chartFragment?.addChartValues(it.values)
+//            },
+//            {
+//                DataManager.endAppend()
+//            }
+//        )
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

@@ -3,7 +3,7 @@ package com.brain.wave.model
 import android.util.Log
 import com.brain.wave.TAG
 import com.brain.wave.contracts.*
-import com.brain.wave.util.decodeToHexString
+import com.brain.wave.util.decodeToUnsignedHexString
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -103,184 +103,94 @@ private fun ByteArray.toInt(
     fromIndex: Int,
     toIndex: Int,
     order: ByteOrder = ByteOrder.LITTLE_ENDIAN
-): Int = copyOfRange(fromIndex, toIndex).let {
-    if (it.size == 3) {
-        return@let it.completeToInt(order)
-    }
+): Int = copyOfRange(fromIndex, toIndex).toInt(order)
 
-    val buffer = ByteBuffer.wrap(it).order(order)
-    return@let when (it.size) {
+private fun ByteArray.toInt(order: ByteOrder): Int {
+    val buffer = ByteBuffer.wrap(this).order(order)
+    return when (size) {
         1 -> buffer.get().toInt()
         2 -> buffer.short.toInt()
         4 -> buffer.int
-        else -> 0
+        else -> buffer.getInt24()
     }
+//        .also {
+//        println("------------>")
+//        println("-->${decodeToUnsignedHexString()}")
+//        println("-->$it")
+//        println("<------------")
+//    }
 }
 
-private fun ByteArray.completeToInt(order: ByteOrder = ByteOrder.LITTLE_ENDIAN): Int {
-//    val newBytes = ByteArray(4)
-//    copyInto(newBytes, destinationOffset = if (order == ByteOrder.BIG_ENDIAN) 1 else 0)
-//    newBytes[if (order == ByteOrder.BIG_ENDIAN) 0 else 3] = 0x00.toByte()
-    println("---------------------------------------->")
-    println("--------->字节: ${joinToString(prefix = "[", postfix = "]", separator = ",") { it.toUByte().toString(2) }}")
-    println("--------->16进制: ${decodeToHexString("")}")
-    val binaryString = joinToString(separator = ""){
-        var str = it.toUByte().toString(2)
-        while (str.length < 8){
-            str ="0$str"
-        }
-        str
-    }
-    println("--------->二进制: $binaryString")
-    val yuan = yuan2(binaryString)
-    println("--------->原码: $yuan")
-    return Integer.reverseBytes(yuan.toUInt(2).toInt()).also {
-        println("--------->结果值：$it")
-        println("<----------------------------------------")
-    }
+fun ByteBuffer.putInt24(value: Int) {
+    put((value shr 16).toByte())
+    put((value shr 8).toByte())
+    put(value.toByte())
 }
 
-fun yuan2(input: String): String {
-    val binary = input.last().toString() //取第一位判断正负
-    val result: String = if ("0" == binary) {
-        input
-    } else {
-        val bits = input.split("").filterNot { it.isBlank() }
-        val builder = StringBuilder()
-        for ((index, bit) in bits.withIndex()) {
-            if (index == 0) {
-                builder.append(bit)
-                continue
-            }
-            val inv: String = if ("0" == bit) "1" else "0"
-            builder.append(inv)
-        }
-        // 二进制转为十进制.
-        (builder.toString().toUInt(2).toInt() + 1).toUInt().toString(2)
-    }
-    return result
+fun ByteBuffer.getInt24(): Int {
+    val data = ByteArray(3)
+    get(data)
+    return (data[0].toInt() shl 16
+            or (data[1].toInt() shl 8 and 0xFF00)
+            or (data[2].toInt() and 0xFF))
 }
 
-fun yuan(input: String): String {
-    val binary = input.substring(0, 1) //取第一位判断正负
-    val result: String = if ("0" == binary) {
-        input
-    } else {
-        val bits = input.split("").filterNot { it.isBlank() }
-        val builder = StringBuilder()
-        for ((index, bit) in bits.withIndex()) {
-            if (index == 0) {
-                builder.append(bit)
-                continue
-            }
-            var inv: String = if ("0" == bit) "1" else "0"
-            if (index == bits.size - 1) {
-                inv = (inv.toInt(2) + 1).toString(2)
-            }
-            builder.append(inv)
-        }
-        // 二进制转为十进制.
-        builder.toString()
-    }
-    return result
+fun ByteBuffer.getUnsignedInt24(): UInt {
+    val data = ByteArray(3)
+    get(data)
+    return (data[0].toUInt() shl 16 and 0xFF0000.toUInt()
+            or (data[1].toUInt() shl 8 and 0xFF00.toUInt())
+            or (data[0].toUInt() and 0xFF.toUInt()))
 }
 
-fun fan(input: String): String {
-    val binary = input.substring(0, 1) //取第一位判断正负
-    val result: String = if ("0" == binary) {
-        input
-    } else {
-        val bits = input.split("").filterNot { it.isBlank() }
-        val builder = StringBuilder()
-        for ((index, bit) in bits.withIndex()) {
-            if (index == 0) {
-                builder.append(bit)
-                continue
-            }
-            val inv: String = if ("0" == bit) "1" else "0"
-            builder.append(inv)
-        }
-        // 二进制转为十进制.
-        builder.toString()
-    }
-    return result
-}
-
-fun bu(input: String): String {
-    val binary = input.substring(0, 1) //取第一位判断正负
-    val result: String = if ("0" == binary) {
-        input
-    } else {
-        val bits = input.split("").filterNot { it.isBlank() }
-        val builder = StringBuilder()
-        for ((index, bit) in bits.withIndex()) {
-            if (index == 0) {
-                builder.append(bit)
-                continue
-            }
-            var inv: String = if ("0" == bit) "1" else "0"
-            if (index == bits.size - 1) {
-                inv = (inv.toInt(2) + 1).toString(2)
-            }
-            builder.append(inv)
-        }
-        builder.toString()
-    }
-    return result
-}
+//fun yuan2(input: String): String {
+//    val binary = input.last().toString() //取第一位判断正负
+//    val result: String = if ("0" == binary) {
+//        input
+//    } else {
+//        val bits = input.split("").filterNot { it.isBlank() }
+//        val builder = StringBuilder()
+//        for ((index, bit) in bits.withIndex()) {
+//            if (index == bits.lastIndex) {
+//                builder.append(bit)
+//                continue
+//            }
+//            val inv: String = if ("0" == bit) "1" else "0"
+//            builder.append(inv)
+//        }
+//        // 二进制转为十进制.
+//        (builder.toString().toUInt(2) + 1.toUInt()).toString(2)
+//    }
+//    return result
+//}
+//
+//fun yuan(input: String): String {
+//    val binary = input.substring(0, 1) //取第一位判断正负
+//    val result: String = if ("0" == binary) {
+//        input
+//    } else {
+//        val bits = input.split("").filterNot { it.isBlank() }
+//        val builder = StringBuilder()
+//        for ((index, bit) in bits.withIndex()) {
+//            if (index == 0) {
+//                builder.append(bit)
+//                continue
+//            }
+//            var inv: String = if ("0" == bit) "1" else "0"
+//            if (index == bits.size - 1) {
+//                inv = (inv.toInt(2) + 1).toString(2)
+//            }
+//            builder.append(inv)
+//        }
+//        // 二进制转为十进制.
+//        builder.toString()
+//    }
+//    return result
+//}
 
 fun main() {
-    val a = -5
-    val bytes = Int2Bytes_LE(a)
-    val str16 = bytes.decodeToHexString("")
-    println(str16)
+    val str =
+        "ff,01,00,c1,fe,0c,19,fc,ff,ff,19,fc,ff,ff,f4,25,d2,b5,18,d2,65,13,36,00,a3,0b,11,12,d2,b8,0b,d2,c0,25,d2,83,18,d2,dc,18,36,c7,fe,0a,de,11,d2,87,0b,d2,e5,24,d2,a6,17,d2,08,25,36,88,1b,0a,00,11,d2,a9,0a,d2,14,24,d2,d8,16,d2,1f,33,36,dd,57,09,33,10,d2,db,09,d2,1a,24,d2,df,16,d2,03,34,36,f7,6a,09,3d,10,d2,e1,09,d2,86,24,d2,4d,17,d2,64,2c,36,ba,cf,09,b0,10,d2,50,0a,d2,ff,24,d2,c7,17,d2,6a,21,36,ff,2e,0a,21,11,d2,cb,0a,d2,b2,25,d2,79,18,d2,33,10,36,af,c6,0a,d4,11,d2,78,0b,d2,0e,26,d2,d2,18,d2,21,fd,35,ee,3b,0b,30,12,d2,d6,0b,d2,5e,26,d2,26,19,d2,de,f5,35,d6,0d,0b,87,12,d2,2b,0c,d2,1a,20,98"
 
-    val i = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).int
-
-    val j = a.toUInt().toString(2)
-
-
-    println(j.toUInt(2).toInt())
-
-    println("原码: " + j)
-
-    val fan = fan(j)
-
-    println("反码: " + fan)
-
-    val bu = bu(j)
-
-    println("补码: "+ bu)
-
-    val byuan = yuan(bu)
-    println("补码2原码: " + byuan)
-//    println()
-
-    val str = "ff,01,00,c1,fe,0c,19,fc,ff,ff,19,fc,ff,ff,f4,25,d2,b5,18,d2,65,13,36,00,a3,0b,11,12,d2,b8,0b,d2,c0,25,d2,83,18,d2,dc,18,36,c7,fe,0a,de,11,d2,87,0b,d2,e5,24,d2,a6,17,d2,08,25,36,88,1b,0a,00,11,d2,a9,0a,d2,14,24,d2,d8,16,d2,1f,33,36,dd,57,09,33,10,d2,db,09,d2,1a,24,d2,df,16,d2,03,34,36,f7,6a,09,3d,10,d2,e1,09,d2,86,24,d2,4d,17,d2,64,2c,36,ba,cf,09,b0,10,d2,50,0a,d2,ff,24,d2,c7,17,d2,6a,21,36,ff,2e,0a,21,11,d2,cb,0a,d2,b2,25,d2,79,18,d2,33,10,36,af,c6,0a,d4,11,d2,78,0b,d2,0e,26,d2,d2,18,d2,21,fd,35,ee,3b,0b,30,12,d2,d6,0b,d2,5e,26,d2,26,19,d2,de,f5,35,d6,0d,0b,87,12,d2,2b,0c,d2,1a,20,98"
-
-    val value = str.split(",").map { it.toUInt(16).toByte() }.toByteArray()
-    val buffer = ByteBuffer.wrap(value)
-    var bs = ByteArray(20)
-    while (buffer.position() < value.size) {
-        val length = value.size - buffer.position()
-        if(length < 20){
-            bs = ByteArray(length)
-        }
-        buffer[bs]
-        println(bs.decodeToHexString())
-    }
-
-}
-
-fun Int2Bytes_LE(iValue: Int): ByteArray {
-    val rst = ByteArray(4)
-    // 先写int的最后一个字节
-    rst[0] = (iValue and 0xFF).toByte()
-    // int 倒数第二个字节
-    rst[1] = (iValue and 0xFF00 shr 8).toByte()
-    // int 倒数第三个字节
-    rst[2] = (iValue and 0xFF0000 shr 16).toByte()
-    // int 第一个字节
-    rst[3] = (iValue and -0x1000000 shr 24).toByte()
-    return rst
+    str.parseBleResponse()
 }

@@ -301,7 +301,7 @@ class DebugActivity : AppCompatActivity() {
             peripheral.observe(characteristic).collect {
                 withContext(Dispatchers.Main) {
                     textView.append("\n")
-                    textView.append(formatText(it.decodeToHexString()))
+                    textView.append(formatText(it.decodeToUnsignedHexString(",")))
                 }
             }
 
