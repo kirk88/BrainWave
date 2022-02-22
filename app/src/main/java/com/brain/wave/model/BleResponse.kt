@@ -3,6 +3,7 @@ package com.brain.wave.model
 import android.util.Log
 import com.brain.wave.TAG
 import com.brain.wave.contracts.*
+import com.brain.wave.util.TT
 import com.brain.wave.util.decodeToUnsignedHexString
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -93,7 +94,10 @@ fun ByteArray.parseBleResponse(): BleResponse? {
 }
 
 fun String.parseBleResponse(): BleResponse? {
-    val bytes = split(",").map { it.toInt(16).toByte() }.toByteArray()
+   val str =  if(!contains(",")){
+       replace("(.{2})".toRegex(), ",$1").substring(1)
+    } else this
+    val bytes = str.split(",").map { it.toInt(16).toByte() }.toByteArray()
     return bytes.parseBleResponse()
 }
 
@@ -106,41 +110,25 @@ private fun ByteArray.toInt(
 ): Int = copyOfRange(fromIndex, toIndex).toInt(order)
 
 private fun ByteArray.toInt(order: ByteOrder): Int {
-    val buffer = ByteBuffer.wrap(this).order(order)
-    return when (size) {
-        1 -> buffer.get().toInt()
-        2 -> buffer.short.toInt()
-        4 -> buffer.int
-        else -> buffer.getInt24()
+    return if (size == 3) {
+        getInt24(order)
+    } else {
+        val buffer = ByteBuffer.wrap(this).order(order)
+        when (size) {
+            1 -> buffer.get().toInt()
+            2 -> buffer.short.toInt()
+            4 -> buffer.int
+            else -> 0
+        }
     }
-//        .also {
-//        println("------------>")
-//        println("-->${decodeToUnsignedHexString()}")
-//        println("-->$it")
-//        println("<------------")
-//    }
 }
 
-fun ByteBuffer.putInt24(value: Int) {
-    put((value shr 16).toByte())
-    put((value shr 8).toByte())
-    put(value.toByte())
-}
+fun ByteArray.getInt24(order: ByteOrder): Int {
+    if(order == ByteOrder.LITTLE_ENDIAN){
+        reverse()
+    }
 
-fun ByteBuffer.getInt24(): Int {
-    val data = ByteArray(3)
-    get(data)
-    return (data[0].toInt() shl 16
-            or (data[1].toInt() shl 8 and 0xFF00)
-            or (data[2].toInt() and 0xFF))
-}
-
-fun ByteBuffer.getUnsignedInt24(): UInt {
-    val data = ByteArray(3)
-    get(data)
-    return (data[0].toUInt() shl 16 and 0xFF0000.toUInt()
-            or (data[1].toUInt() shl 8 and 0xFF00.toUInt())
-            or (data[0].toUInt() and 0xFF.toUInt()))
+    return TT.interpret24bitAsInt32(this)
 }
 
 //fun yuan2(input: String): String {
