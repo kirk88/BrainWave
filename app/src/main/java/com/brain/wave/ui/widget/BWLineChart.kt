@@ -174,7 +174,7 @@ class BWLineChart @JvmOverloads constructor(
                     valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("uV")
-                setVisibleXRange(1f, 1000f)
+                setVisibleXRange(1f, 800f)
             }
         }
     }
