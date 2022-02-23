@@ -2,7 +2,8 @@ package com.brain.wave.util;
 
 import java.math.BigInteger;
 
-public class TT {
+public class BitConverter {
+
     public static String generateKString(String binary){
         // k is the smallest positive number the actual binary scheme cannot represent
         // for 1101 it is 1000

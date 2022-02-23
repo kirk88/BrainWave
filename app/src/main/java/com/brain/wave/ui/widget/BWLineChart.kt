@@ -157,7 +157,11 @@ class BWLineChart @JvmOverloads constructor(
                     setLabelCount(5, true)
                     valueFormatter = XAxisValueFormatter(valuesCache)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("%")
+                axisLeft.apply {
+                    valueFormatter = LeftAxisValueFormatter("%")
+                    axisMinimum = 0F
+                    axisMaximum = 100F
+                }
                 setVisibleXRange(1f, 20f)
             }
             PPG_IR_SIGNAL -> {
@@ -165,7 +169,13 @@ class BWLineChart @JvmOverloads constructor(
                     setLabelCount(5, true)
                     valueFormatter = XAxisValueFormatter(valuesCache)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("a.u.")
+                axisLeft.apply {
+                    valueFormatter = LeftAxisValueFormatter("a.u.")
+                    axisMinimum = 0F
+                    if(axisMaximum < 100F){
+                        axisMaximum = 100F
+                    }
+                }
                 setVisibleXRange(1f, 20f)
             }
             else -> {

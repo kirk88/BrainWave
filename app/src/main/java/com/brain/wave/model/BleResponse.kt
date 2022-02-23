@@ -3,8 +3,7 @@ package com.brain.wave.model
 import android.util.Log
 import com.brain.wave.TAG
 import com.brain.wave.contracts.*
-import com.brain.wave.util.TT
-import com.brain.wave.util.decodeToUnsignedHexString
+import com.brain.wave.util.BitConverter
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -30,8 +29,6 @@ data class Value(
 
     val floatValue: Float = when (type) {
         TEMPERATURE -> value * 0.0078125F
-        SPO2 -> value * 0.01F
-        PPG_IR_SIGNAL -> value * 0.1F
         else -> value.toFloat()
     }
 
@@ -128,53 +125,8 @@ fun ByteArray.getInt24(order: ByteOrder): Int {
         reverse()
     }
 
-    return TT.interpret24bitAsInt32(this)
+    return BitConverter.interpret24bitAsInt32(this)
 }
-
-//fun yuan2(input: String): String {
-//    val binary = input.last().toString() //取第一位判断正负
-//    val result: String = if ("0" == binary) {
-//        input
-//    } else {
-//        val bits = input.split("").filterNot { it.isBlank() }
-//        val builder = StringBuilder()
-//        for ((index, bit) in bits.withIndex()) {
-//            if (index == bits.lastIndex) {
-//                builder.append(bit)
-//                continue
-//            }
-//            val inv: String = if ("0" == bit) "1" else "0"
-//            builder.append(inv)
-//        }
-//        // 二进制转为十进制.
-//        (builder.toString().toUInt(2) + 1.toUInt()).toString(2)
-//    }
-//    return result
-//}
-//
-//fun yuan(input: String): String {
-//    val binary = input.substring(0, 1) //取第一位判断正负
-//    val result: String = if ("0" == binary) {
-//        input
-//    } else {
-//        val bits = input.split("").filterNot { it.isBlank() }
-//        val builder = StringBuilder()
-//        for ((index, bit) in bits.withIndex()) {
-//            if (index == 0) {
-//                builder.append(bit)
-//                continue
-//            }
-//            var inv: String = if ("0" == bit) "1" else "0"
-//            if (index == bits.size - 1) {
-//                inv = (inv.toInt(2) + 1).toString(2)
-//            }
-//            builder.append(inv)
-//        }
-//        // 二进制转为十进制.
-//        builder.toString()
-//    }
-//    return result
-//}
 
 fun main() {
     val str =
