@@ -149,7 +149,11 @@ class BWLineChart @JvmOverloads constructor(
                     setLabelCount(5, true)
                     valueFormatter = XAxisValueFormatter(valuesCache)
                 }
-                axisLeft.valueFormatter = LeftAxisValueFormatter("℃", isDecimal = true)
+                axisLeft.apply {
+                    valueFormatter = LeftAxisValueFormatter("℃")
+                    axisMinimum = 0F
+                    axisMaximum = 50F
+                }
                 setVisibleXRange(1f, 20f)
             }
             SPO2 -> {
