@@ -6,5 +6,7 @@ const val TIME = "Time"
 const val TEMPERATURE = "Temperature" //温度
 const val SPO2 = "SpO2"
 const val PPG_IR_SIGNAL = "PPG IR signal"
+const val ORIGIN_SPO2 = "Original SpO2"
+const val ORIGIN_PPG_IR_SIGNAL = "Original PPG IR signal"
 const val CHANNEL = "EEG Channel"
 fun channelType(n: Int) = "$CHANNEL $n"

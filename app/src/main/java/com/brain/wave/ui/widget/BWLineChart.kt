@@ -1,14 +1,14 @@
 package com.brain.wave.ui.widget
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.util.AttributeSet
+import android.view.ViewGroup
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.brain.wave.R
-import com.brain.wave.contracts.CHANNEL
-import com.brain.wave.contracts.PPG_IR_SIGNAL
-import com.brain.wave.contracts.SPO2
-import com.brain.wave.contracts.TEMPERATURE
+import com.brain.wave.contracts.*
 import com.brain.wave.model.Value
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
@@ -39,6 +39,7 @@ class BWLineChart @JvmOverloads constructor(
     }
 
     private val valuesCache = mutableListOf<Value>()
+    private val extraValues = mutableListOf<Value>()
 
     init {
         mXAxisRenderer = MyXAxisRenderer(mViewPortHandler, mXAxis, mLeftAxisTransformer)
@@ -100,9 +101,12 @@ class BWLineChart @JvmOverloads constructor(
 
     }
 
-    fun setDataList(type: String, values: List<Value>) {
+    fun setDataList(type: String, values: List<Value>, extraValues: List<Value> = emptyList()) {
         this.valuesCache.clear()
         this.valuesCache.addAll(values)
+
+        this.extraValues.clear()
+        this.extraValues.addAll(extraValues)
 
         val dataSet = LineDataSet(null, "main").apply {
             for ((index, value) in values.withIndex()) {
@@ -167,8 +171,10 @@ class BWLineChart @JvmOverloads constructor(
                     axisMaximum = 100F
                 }
                 setVisibleXRange(1f, 20f)
+
+                updateExtraInfo(PPG_IR_SIGNAL, "a.u.")
             }
-            PPG_IR_SIGNAL -> {
+            ORIGIN_PPG_IR_SIGNAL -> {
                 xAxis.apply {
                     setLabelCount(5, true)
                     valueFormatter = XAxisValueFormatter(valuesCache)
@@ -176,9 +182,6 @@ class BWLineChart @JvmOverloads constructor(
                 axisLeft.apply {
                     valueFormatter = LeftAxisValueFormatter("a.u.")
                     axisMinimum = 0F
-                    if(axisMaximum < 100F){
-                        axisMaximum = 100F
-                    }
                 }
                 setVisibleXRange(1f, 20f)
             }
@@ -190,6 +193,21 @@ class BWLineChart @JvmOverloads constructor(
                 axisLeft.valueFormatter = LeftAxisValueFormatter("uV")
                 setVisibleXRange(1f, 1000f)
             }
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun updateExtraInfo(type: String, unit: String) {
+        val parentViewGroup = parent as? ViewGroup ?: return
+
+        val extraTextView = parentViewGroup.findViewById<TextView>(R.id.extra_info)
+
+        if (extraValues.isEmpty()) {
+            extraTextView.text = null
+        } else {
+            extraTextView.text = "${extraValues.last().value.let {
+                if(it == -999L && (type == SPO2 || type == PPG_IR_SIGNAL))  0 else it
+            }}$unit"
         }
     }
 

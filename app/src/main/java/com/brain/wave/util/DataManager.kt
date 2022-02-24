@@ -90,12 +90,14 @@ object DataManager {
             sheet.addCell(Label(1, 0, TEMPERATURE))
             sheet.addCell(Label(2, 0, SPO2))
             sheet.addCell(Label(3, 0, PPG_IR_SIGNAL))
-            sheet.addCell(Label(4, 0, channelType(1)))
-            sheet.addCell(Label(5, 0, channelType(2)))
-            sheet.addCell(Label(6, 0, channelType(3)))
-            sheet.addCell(Label(7, 0, channelType(4)))
-            sheet.addCell(Label(8, 0, channelType(5)))
-            sheet.addCell(Label(9, 0, channelType(6)))
+            sheet.addCell(Label(4, 0, ORIGIN_SPO2))
+            sheet.addCell(Label(5, 0, ORIGIN_PPG_IR_SIGNAL))
+            sheet.addCell(Label(6, 0, channelType(1)))
+            sheet.addCell(Label(7, 0, channelType(2)))
+            sheet.addCell(Label(8, 0, channelType(3)))
+            sheet.addCell(Label(9, 0, channelType(4)))
+            sheet.addCell(Label(10, 0, channelType(5)))
+            sheet.addCell(Label(11, 0, channelType(6)))
 
             var n = 1
 
@@ -132,7 +134,21 @@ object DataManager {
                 n += step
             }
 
-            var column = 4
+            n = 1
+            list = valuesMap[ORIGIN_SPO2].orEmpty()
+            for (value in list) {
+                sheet.addCell(Number(3, n, value.doubleValue))
+                n += step
+            }
+
+            n = 1
+            list = valuesMap[ORIGIN_PPG_IR_SIGNAL].orEmpty()
+            for (value in list) {
+                sheet.addCell(Number(4, n, value.doubleValue))
+                n += step
+            }
+
+            var column = 6
             for (count in 1..6) {
                 list = valuesMap[channelType(count)].orEmpty()
                 for ((index, value) in list.withIndex()) {

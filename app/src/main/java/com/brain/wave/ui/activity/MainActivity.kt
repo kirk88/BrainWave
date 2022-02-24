@@ -141,19 +141,19 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                 recordingBtn.setText(R.string.stop_recording)
             }
         }
-//        DataManager.beginAppend()
-//        DataReader.send(
-//            {
-//                delay(100L)
-//
-//                DataManager.append(it.values)
-//
-//                chartFragment?.addChartValues(it.values)
-//            },
-//            {
-//                DataManager.endAppend()
-//            }
-//        )
+        DataManager.beginAppend()
+        DataReader.send(
+            {
+                delay(100L)
+
+                DataManager.append(it.values)
+
+                chartFragment?.addChartValues(it.values)
+            },
+            {
+                DataManager.endAppend()
+            }
+        )
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
