@@ -41,41 +41,31 @@ fun ByteArray.parseBleResponse(): BleResponse? {
         val header = toInt(0)
         val type = toInt(1)
         val length = toInt(2, 4, ByteOrder.BIG_ENDIAN)
-        val frame = toInt(202)
+        val frame = toInt(200)
         val code = toInt(size - 2, size)
-
         val values = mutableListOf<Value>()
-
         val timeMillis = System.currentTimeMillis()
-
         //时间
         val timeValue = Value(timeMillis, TIME, 0, timeMillis = timeMillis)
         repeat(10) { values.add(timeValue) }
-
         //温度
         var value = toInt(4, 6).toLong()
         values.add(Value(value, TEMPERATURE, 1, timeMillis = timeMillis))
-
         //血氧
         value = toInt(6, 10).toLong()
         values.add(Value(value, SPO2, 2, timeMillis = timeMillis))
-
         //原始血氧
-        value = toInt(198, 202).toLong()
+        value = toInt(197, 200).toLong()
         values.add(Value(value, ORIGIN_SPO2, 3, timeMillis = timeMillis))
-
         //心率
         value = toInt(10, 14).toLong()
         values.add(Value(value, PPG_IR_SIGNAL, 4, timeMillis = timeMillis))
-
         //原始心率
-        value = toInt(194, 198).toLong()
+        value = toInt(194, 197).toLong()
         values.add(Value(value, ORIGIN_PPG_IR_SIGNAL, 5, timeMillis = timeMillis))
-
         //通道1~6的10次采样数据
         for (index in 14..(size - 18) step 18) {
             val channelBytes = copyOfRange(index, index + 18)
-
             var count = 1
             for (i in 0..(channelBytes.size - 3) step 3) {
                 value = channelBytes.toInt(i, i + 3).toLong()
