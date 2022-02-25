@@ -4,6 +4,8 @@ import android.util.Log
 import com.brain.wave.TAG
 import com.brain.wave.contracts.*
 import com.brain.wave.util.BitConverter
+import com.brain.wave.util.SystemTimeClock
+import com.brain.wave.util.decodeToUnsignedBinaryString
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -13,7 +15,7 @@ data class BleResponse(
     val length: Int,
     val values: List<Value>,
     val frame: Int,
-    val code: Int
+    val code: String
 )
 
 data class Value(
@@ -42,9 +44,10 @@ fun ByteArray.parseBleResponse(): BleResponse? {
         val type = toInt(1)
         val length = toInt(2, 4, ByteOrder.BIG_ENDIAN)
         val frame = toInt(200)
-        val code = toInt(size - 2, size)
+        val code = copyOfRange(size - 2, size).decodeToUnsignedBinaryString()
+
         val values = mutableListOf<Value>()
-        val timeMillis = System.currentTimeMillis()
+        val timeMillis = SystemTimeClock.currentTimeMillis()
         //时间
         val timeValue = Value(timeMillis, TIME, 0, timeMillis = timeMillis)
         repeat(10) { values.add(timeValue) }

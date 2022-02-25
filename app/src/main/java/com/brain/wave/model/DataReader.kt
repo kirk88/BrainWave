@@ -2,6 +2,7 @@ package com.brain.wave.model
 
 import com.brain.wave.appContext
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 
 object DataReader {
 
@@ -19,9 +20,18 @@ object DataReader {
 
     @OptIn(DelicateCoroutinesApi::class)
     fun send(block: suspend (BleResponse) -> Unit, onCompletion: (Throwable?) -> Unit = {}) {
-        job = GlobalScope.launch {
+        job = GlobalScope.launch(Dispatchers.Default) {
+            val channel = Channel<BleResponse>()
+
+            launch {
+                for (res in channel) {
+                    block.invoke(res)
+                }
+            }
+
             for (line in lines) {
-                line.parseBleResponse()?.let { block(it) }
+                delay(20L)
+                line.parseBleResponse()?.let { channel.send(it) }
             }
         }.apply {
             invokeOnCompletion(onCompletion)

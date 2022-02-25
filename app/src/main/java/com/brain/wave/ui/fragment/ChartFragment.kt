@@ -13,7 +13,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.brain.wave.R
 import com.brain.wave.TAG
-import com.brain.wave.contracts.*
+import com.brain.wave.contracts.ORIGIN_SPO2
+import com.brain.wave.contracts.PPG_IR_SIGNAL
+import com.brain.wave.contracts.SPO2
+import com.brain.wave.contracts.TIME
 import com.brain.wave.model.Value
 import com.brain.wave.ui.widget.BWLineChart
 import com.brain.wave.util.getDataList
@@ -105,47 +108,35 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
     }
 
 
-    private fun renderView(valuesMap: Map<String, List<Value>>, moveToEnd: Boolean = false) {
-        val container = chartContainer ?: return
+    private fun renderView(valuesMap: Map<String, List<Value>>, moveToEnd: Boolean = false) = lifecycleScope.launch {
+        val container = chartContainer ?: return@launch
 
-        if (isAdded) {
-            container.post(RenderViewRunnable(layoutInflater, container, valuesMap, moveToEnd))
-        }
-    }
+        for ((type, values) in valuesMap) {
+            if (type == TIME || type == ORIGIN_SPO2 || type == PPG_IR_SIGNAL) continue
 
+            delay(100L)
 
-    private class RenderViewRunnable(
-        private val layoutInflater: LayoutInflater,
-        private val container: ViewGroup,
-        private val valuesMap: Map<String, List<Value>>,
-        private val moveToEnd: Boolean
-    ) : Runnable {
-
-        override fun run() {
-            for ((type, values) in valuesMap) {
-                if (type == TIME || type == ORIGIN_SPO2 || type == PPG_IR_SIGNAL) continue
-
-                val itemView = container.findViewWithTag(type)
-                    ?: layoutInflater.inflate(R.layout.item_chart, container, false).also {
-                        it.tag = type
-                        container.addView(it)
-                    }
-
-                val titleView = itemView.findViewById<TextView>(R.id.title)
-                val chartView = itemView.findViewById<BWLineChart>(R.id.chart)
-                titleView.text = type
-                chartView.setDataList(type, values.toList(), when (type) {
-                    SPO2 -> valuesMap.getOrElse(PPG_IR_SIGNAL) { emptyList() }
-                    else -> emptyList()
-                })
-                if (moveToEnd) {
-                    chartView.moveToEnd()
-                } else {
-                    chartView.animateX(1000)
+            val itemView = container.findViewWithTag(type)
+                ?: layoutInflater.inflate(R.layout.item_chart, container, false).also {
+                    it.tag = type
+                    container.addView(it)
                 }
+
+            val titleView = itemView.findViewById<TextView>(R.id.title)
+            val chartView = itemView.findViewById<BWLineChart>(R.id.chart)
+            titleView.text = type
+            chartView.setDataList(type, values.toList(), when (type) {
+                SPO2 -> valuesMap.getOrElse(PPG_IR_SIGNAL) { emptyList() }
+                else -> emptyList()
+            })
+            if (moveToEnd) {
+                chartView.moveToEnd()
+            } else {
+                chartView.animateX(1000)
             }
         }
-
     }
+
+
 
 }

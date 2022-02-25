@@ -112,7 +112,7 @@ class BWLineChart @JvmOverloads constructor(
             for ((index, value) in values.withIndex()) {
                 addEntry(Entry(index.toFloat(), if (value.isValid) value.floatValue else 0F, value))
             }
-            mode = if (type.contains(CHANNEL)) {
+            mode = if (type.contains(CHANNEL) || type == ORIGIN_PPG_IR_SIGNAL) {
                 setDrawCircles(false)
                 setDrawValues(false)
                 LineDataSet.Mode.LINEAR
@@ -180,10 +180,9 @@ class BWLineChart @JvmOverloads constructor(
                     valueFormatter = XAxisValueFormatter(valuesCache)
                 }
                 axisLeft.apply {
-                    valueFormatter = LeftAxisValueFormatter("a.u.")
-                    axisMinimum = 0F
+                    valueFormatter = LeftAxisValueFormatter("")
                 }
-                setVisibleXRange(1f, 20f)
+                setVisibleXRange(1f, 500f)
             }
             else -> {
                 xAxis.apply {
@@ -205,9 +204,11 @@ class BWLineChart @JvmOverloads constructor(
         if (extraValues.isEmpty()) {
             extraTextView.text = null
         } else {
-            extraTextView.text = "${extraValues.last().value.let {
-                if(it == -999L && (type == SPO2 || type == PPG_IR_SIGNAL))  0 else it
-            }}$unit"
+            extraTextView.text = "${
+                extraValues.last().value.let {
+                    if (it == -999L && (type == SPO2 || type == PPG_IR_SIGNAL)) 0 else it
+                }
+            }$unit"
         }
     }
 

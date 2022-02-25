@@ -16,14 +16,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.brain.wave.R
 import com.brain.wave.model.BleResponse
-import com.brain.wave.model.DataReader
 import com.brain.wave.model.parseBleResponse
 import com.brain.wave.ui.BaseActivity
 import com.brain.wave.ui.fragment.ChartFragment
-import com.brain.wave.util.DataManager
-import com.brain.wave.util.setupActionBar
-import com.brain.wave.util.showSnackbar
-import com.brain.wave.util.toAppSetting
+import com.brain.wave.util.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.nice.bluetooth.Bluetooth
 import com.nice.bluetooth.Scanner
@@ -141,19 +137,22 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                 recordingBtn.setText(R.string.stop_recording)
             }
         }
-        DataManager.beginAppend()
-        DataReader.send(
-            {
-                delay(100L)
+//        DataManager.beginAppend()
+//        DataReader.send(
+//            {
+//                DataManager.append(it.values)
+//
+//                chartFragment?.addChartValues(it.values)
+//            },
+//            {
+//                DataManager.endAppend()
+//            }
+//        )
+    }
 
-                DataManager.append(it.values)
-
-                chartFragment?.addChartValues(it.values)
-            },
-            {
-                DataManager.endAppend()
-            }
-        )
+    override fun onStart() {
+        super.onStart()
+        c(this)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -281,7 +280,7 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                 if (characteristic != null) {
                     chartFragment?.clearChartValues()
 
-                    val channel = Channel<BleResponse>(Channel.UNLIMITED)
+                    val channel = Channel<BleResponse>()
                     launch(Dispatchers.IO) {
                         for (res in channel) {
                             val values = res.values
