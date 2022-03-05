@@ -3,7 +3,6 @@ package com.brain.wave.util
 import android.app.Activity
 import android.util.Base64
 import android.util.Log
-import androidx.core.net.toUri
 import com.brain.wave.BuildConfig
 import com.brain.wave.TAG
 import kotlinx.coroutines.*
@@ -21,23 +20,24 @@ class AEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
     fun c() {
         if (BuildConfig.DEBUG) return
 
-        GlobalScope.launch {
-            try {
-                val uuuuuuuuuuuuuuuuurl = Base64.decode(UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUURL, Base64.DEFAULT).decodeToString()
-                val rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrres = withContext(Dispatchers.IO) {
-                    URL(uuuuuuuuuuuuuuuuurl).readText()
-                }
-                Log.d(TAG, rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrres)
-                val jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjson =
-                    JSONObject(rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrres)
-                val cccccccccccccccccccccccccccccccccccccccccccccode =
-                    jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjson.optInt("code")
-                if (cccccccccccccccccccccccccccccccccccccccccccccode != 2000) {
-                    throw IllegalAccessException()
-                }
-            } catch (t: Throwable) {
-                Log.e(TAG, t.message, t)
-                acttttttttttttttttttttttttttttttttttttttttttttttttttt.get()?.finish()
+        GlobalScope.launch(Dispatchers.Main + CoroutineExceptionHandler { _, t ->
+            Log.e(TAG, t.message, t)
+            acttttttttttttttttttttttttttttttttttttttttttttttttttt.get()?.finish()
+        }) {
+            val uuuuuuuuuuuuuuuuurl = Base64.decode(
+                UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUURL,
+                Base64.DEFAULT
+            ).decodeToString()
+            val rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrres = withContext(Dispatchers.IO) {
+                URL(uuuuuuuuuuuuuuuuurl).readText()
+            }
+            Log.d(TAG, rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrres)
+            val jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjson =
+                JSONObject(rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrres)
+            val cccccccccccccccccccccccccccccccccccccccccccccode =
+                jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjson.optInt("code")
+            if (cccccccccccccccccccccccccccccccccccccccccccccode != 2000) {
+                throw IllegalAccessException()
             }
         }
     }
