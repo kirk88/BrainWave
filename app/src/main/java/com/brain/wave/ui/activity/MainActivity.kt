@@ -14,8 +14,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
+import com.brain.wave.BuildConfig
 import com.brain.wave.R
 import com.brain.wave.model.BleResponse
+import com.brain.wave.model.DataReader
 import com.brain.wave.model.parseBleResponse
 import com.brain.wave.ui.BaseActivity
 import com.brain.wave.ui.fragment.ChartFragment
@@ -137,17 +139,19 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
                 recordingBtn.setText(R.string.stop_recording)
             }
         }
-//        DataManager.beginAppend()
-//        DataReader.send(
-//            {
-//                DataManager.append(it.values)
-//
-//                chartFragment?.addChartValues(it.values)
-//            },
-//            {
-//                DataManager.endAppend()
-//            }
-//        )
+        if (BuildConfig.DEBUG) {
+            DataManager.beginAppend()
+            DataReader.send(
+                {
+                    DataManager.append(it.values)
+
+                    chartFragment?.addChartValues(it.values)
+                },
+                {
+                    DataManager.endAppend()
+                }
+            )
+        }
     }
 
     override fun onStart() {
@@ -191,6 +195,10 @@ class MainActivity : BaseActivity(R.layout.activity_main), CoroutineScope by Mai
     override fun onDestroy() {
         super.onDestroy()
         cancel()
+
+        if (BuildConfig.DEBUG) {
+            DataReader.cancel()
+        }
     }
 
     private fun checkOrStartScan() {

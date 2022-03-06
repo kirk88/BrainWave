@@ -23,18 +23,25 @@ object DataReader {
         job = GlobalScope.launch(Dispatchers.Default) {
             val channel = Channel<BleResponse>()
 
-            launch {
-                for (res in channel) {
-                    block.invoke(res)
+            var error: Throwable? = null
+            try {
+                launch {
+                    for (res in channel) {
+                        block.invoke(res)
+                    }
                 }
-            }
 
-            for (line in lines) {
-                delay(20L)
-                line.parseBleResponse()?.let { channel.send(it) }
+                repeat(5) {
+                    for (line in lines) {
+                        delay(20L)
+                        line.parseBleResponse()?.let { channel.send(it) }
+                    }
+                }
+            } catch (t: Throwable) {
+                error = t
+            } finally {
+                onCompletion.invoke(error)
             }
-        }.apply {
-            invokeOnCompletion(onCompletion)
         }
     }
 

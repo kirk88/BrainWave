@@ -26,6 +26,7 @@ import com.github.mikephil.charting.utils.ViewPortHandler
 import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.atomic.AtomicLong
 
 class BWLineChart @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -38,8 +39,13 @@ class BWLineChart @JvmOverloads constructor(
         ContextCompat.getColor(context, R.color.line_dark)
     }
 
-    private val valuesCache = mutableListOf<Value>()
-    private val extraValues = mutableListOf<Value>()
+    private val lineDataFixed by lazy {
+        LineData().also { data = it }
+    }
+
+    private val startTime = AtomicLong()
+
+    private var chartType: String? = null
 
     init {
         mXAxisRenderer = MyXAxisRenderer(mViewPortHandler, mXAxis, mLeftAxisTransformer)
@@ -101,17 +107,15 @@ class BWLineChart @JvmOverloads constructor(
 
     }
 
-    fun setDataList(type: String, values: List<Value>, extraValues: List<Value> = emptyList()) {
-        this.valuesCache.clear()
-        this.valuesCache.addAll(values)
+    override fun clear() {
+        super.clear()
+        clearExtraInfo()
+        startTime.set(0L)
+    }
 
-        this.extraValues.clear()
-        this.extraValues.addAll(extraValues)
-
-        val dataSet = LineDataSet(null, "main").apply {
-            for ((index, value) in values.withIndex()) {
-                addEntry(Entry(index.toFloat(), if (value.isValid) value.floatValue else 0F, value))
-            }
+    private fun setupLineDataByType(type: String) {
+        lineDataFixed.clearValues()
+        lineDataFixed.addDataSet(LineDataSet(null, "main").apply {
             mode = if (type.contains(CHANNEL) || type == ORIGIN_PPG_IR_SIGNAL) {
                 setDrawCircles(false)
                 setDrawValues(false)
@@ -129,99 +133,172 @@ class BWLineChart @JvmOverloads constructor(
             valueTextSize = 6f
             color = lineColor
 
-            valueFormatter = object : ValueFormatter() {
-                override fun getFormattedValue(value: Float): String {
-                    return value.toBigDecimal().setScale(2, RoundingMode.HALF_UP)
-                        .stripTrailingZeros().toPlainString()
-                }
-            }
-        }
-        data = LineData(dataSet)
-
-        updateChartWithType(type)
+            valueFormatter = DataValueFormatter()
+        })
     }
 
-    fun moveToEnd() {
-        val dataSet = data?.getDataSetByLabel("main", true) ?: return
-        moveViewToX(dataSet.entryCount.toFloat())
-    }
-
-    private fun updateChartWithType(type: String) {
+    private fun setupAxisByType(type: String) {
         when (type) {
             TEMPERATURE -> {
                 xAxis.apply {
                     setLabelCount(5, true)
-                    valueFormatter = XAxisValueFormatter(valuesCache)
+                    valueFormatter = XAxisValueFormatter(startTime, lineDataFixed)
                 }
                 axisLeft.apply {
                     valueFormatter = LeftAxisValueFormatter("℃")
                     axisMinimum = 0F
                     axisMaximum = 50F
                 }
-                setVisibleXRange(1f, 20f)
             }
             SPO2 -> {
                 xAxis.apply {
                     setLabelCount(5, true)
-                    valueFormatter = XAxisValueFormatter(valuesCache)
+                    valueFormatter = XAxisValueFormatter(startTime, lineDataFixed)
                 }
                 axisLeft.apply {
                     valueFormatter = LeftAxisValueFormatter("%")
                     axisMinimum = 0F
                     axisMaximum = 100F
                 }
-                setVisibleXRange(1f, 20f)
-
-                updateExtraInfo(PPG_IR_SIGNAL, "a.u.")
             }
             ORIGIN_PPG_IR_SIGNAL -> {
                 xAxis.apply {
                     setLabelCount(5, true)
-                    valueFormatter = XAxisValueFormatter(valuesCache)
+                    valueFormatter = XAxisValueFormatter(startTime, lineDataFixed)
                 }
                 axisLeft.apply {
                     valueFormatter = LeftAxisValueFormatter("")
                 }
-                setVisibleXRange(1f, 500f)
             }
             else -> {
                 xAxis.apply {
                     setLabelCount(5, true)
-                    valueFormatter = XAxisValueFormatter(valuesCache)
+                    valueFormatter = XAxisValueFormatter(startTime, lineDataFixed)
                 }
                 axisLeft.valueFormatter = LeftAxisValueFormatter("uV")
-                setVisibleXRange(1f, 1000f)
             }
         }
     }
 
-    @SuppressLint("SetTextI18n")
-    private fun updateExtraInfo(type: String, unit: String) {
-        val parentViewGroup = parent as? ViewGroup ?: return
+    private fun setChartType(type: String) {
+        if (chartType == type) return
 
-        val extraTextView = parentViewGroup.findViewById<TextView>(R.id.extra_info)
+        chartType = type
 
-        if (extraValues.isEmpty()) {
-            extraTextView.text = null
-        } else {
-            extraTextView.text = "${
-                extraValues.last().value.let {
-                    if (it == -999L && (type == SPO2 || type == PPG_IR_SIGNAL)) 0 else it
-                }
-            }$unit"
+        setupAxisByType(type)
+        setupLineDataByType(type)
+    }
+
+    private fun setVisibleCountByType(type: String) {
+        when (type) {
+            TEMPERATURE -> setVisibleXRange(1f, 20f)
+            SPO2 -> setVisibleXRange(1f, 20f)
+            ORIGIN_PPG_IR_SIGNAL -> setVisibleXRange(1f, 500f)
+            else -> setVisibleXRange(1f, 1000f)
         }
     }
 
-    private class XAxisValueFormatter(private val values: List<Value>) : ValueFormatter() {
+    private fun moveToEnd() {
+        val dataSet = lineDataFixed.getDataSetByLabel("main", true) ?: return
+        val lastEntryIndex = dataSet.entryCount - 1
+        if (lastEntryIndex > -1) {
+            val lastEntry = dataSet.getEntryForIndex(lastEntryIndex)
+            moveViewToX(lastEntry.x)
+        }
+    }
+
+    private fun invalidateIfNeed(moveToEnd: Boolean) {
+        if(!hasWindowFocus()) return
+
+        postInvalidateOnAnimation()
+
+        if (moveToEnd) {
+            moveToEnd()
+        }
+    }
+
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        if(hasWindowFocus){
+            invalidateIfNeed(false)
+        }
+    }
+
+    fun addDataList(
+        type: String,
+        values: List<Value>,
+        extraValue: Value? = null,
+        moveToEnd: Boolean = true
+    ) {
+        if (values.isEmpty()) return
+
+        if (extraValue != null) {
+            setExtraInfo(extraValue, PPG_IR_SIGNAL, "a.u.")
+        }
+
+        setChartType(type)
+
+        val dataSet = lineDataFixed.getDataSetByLabel("main", true) ?: return
+        if (dataSet.entryCount == 0) {
+            startTime.set(values.first().timeMillis)
+        }
+        for (value in values) {
+            val lastEntryIndex = dataSet.entryCount - 1
+            val lastEntry =
+                if (lastEntryIndex > -1) dataSet.getEntryForIndex(lastEntryIndex) else null
+            val x = if (lastEntry == null) 0F else lastEntry.x + 1
+            dataSet.addEntry(
+                Entry(x, if (value.isValid) value.floatValue else 0F, value)
+            )
+        }
+        while (dataSet.entryCount > 10000) {
+            dataSet.removeFirst()
+        }
+        notifyDataSetChanged()
+        setVisibleCountByType(type)
+
+        invalidateIfNeed(moveToEnd)
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun setExtraInfo(value: Value, type: String, unit: String) {
+        val parentViewGroup = parent as? ViewGroup ?: return
+
+        val extraTextView = parentViewGroup.findViewById<TextView>(R.id.extra_info)
+        extraTextView.text = "${
+            value.value.let {
+                if (it == -999L && (type == SPO2 || type == PPG_IR_SIGNAL)) 0 else it
+            }
+        }$unit"
+    }
+
+    private fun clearExtraInfo() {
+        val parentViewGroup = parent as? ViewGroup ?: return
+
+        val extraTextView = parentViewGroup.findViewById<TextView>(R.id.extra_info)
+        extraTextView.text = null
+    }
+
+    private class DataValueFormatter : ValueFormatter() {
+        override fun getFormattedValue(value: Float): String {
+            return value.toBigDecimal().setScale(2, RoundingMode.HALF_UP)
+                .stripTrailingZeros().toPlainString()
+        }
+    }
+
+    private class XAxisValueFormatter(
+        private val startTime: AtomicLong,
+        private val lineData: LineData
+    ) : ValueFormatter() {
 
         private val timeFormatter = SimpleDateFormat("mm:ss", Locale.getDefault())
 
         override fun getFormattedValue(value: Float): String {
-            val index = value.toInt()
-            if (index in 1..3) return ""
-            val firstValue = values.getOrNull(0) ?: return ""
-            val targetValue = values.getOrNull(index) ?: return ""
-            return timeFormatter.format(targetValue.timeMillis - firstValue.timeMillis)
+            if (startTime.get() == 0L) return ""
+            val dataSet = lineData.getDataSetByLabel("main", true) ?: return ""
+            val targetEntry = dataSet.getEntryForXValue(value, 0F) ?: return ""
+            val targetValue = targetEntry.data as? Value ?: return ""
+            return timeFormatter.format(targetValue.timeMillis - startTime.get())
         }
     }
 

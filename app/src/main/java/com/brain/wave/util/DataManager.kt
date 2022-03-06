@@ -46,6 +46,8 @@ object DataManager {
     }
 
     fun beginAppend() {
+        Log.e(TAG, "beginAppend")
+
         synchronized(lock) {
             dataList.clear()
         }
@@ -64,16 +66,14 @@ object DataManager {
     fun endAppend() {
         isBegin = false
 
-        GlobalScope.launch(Dispatchers.IO) {
-            synchronized(lock) {
-                if (dataList.isNotEmpty()) {
-                    val dataMap = mutableMapOf<String, MutableList<Value>>()
-                    for (data in dataList) {
-                        dataMap.getOrPut(data.type) { mutableListOf() }.add(data)
-                    }
+        Log.e(TAG, "endAppend")
 
-                    writeExcel(dataMap)
-                }
+        GlobalScope.launch(Dispatchers.IO) {
+            if (dataList.isNotEmpty()) {
+                val dataMap = mutableMapOf<String, MutableList<Value>>()
+                dataList.groupByTo(dataMap) { it.type }
+
+                writeExcel(dataMap)
             }
         }
     }

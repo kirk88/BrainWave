@@ -2,7 +2,6 @@ package com.brain.wave.ui.fragment
 
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -21,6 +20,8 @@ import com.brain.wave.model.Value
 import com.brain.wave.ui.widget.BWLineChart
 import com.brain.wave.util.getDataList
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 class ChartFragment : Fragment(R.layout.fragment_chart) {
@@ -29,7 +30,7 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
     private var progressBar: ContentLoadingProgressBar? = null
     private var emptyView: View? = null
 
-    private val cachedValuesMap = linkedMapOf<String, MutableList<Value>>()
+    private val lock = Mutex()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         chartContainer = view.findViewById(R.id.chart_container)
@@ -59,8 +60,7 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
             } else {
                 emptyView?.isVisible = false
 
-                val dataMap = addToValuesMap(dataList)
-                renderView(dataMap)
+                addToView(dataList.toTypedMap())
             }
 
             progressBar?.hide()
@@ -70,22 +70,16 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
     fun addAllChartValues(valuesList: List<List<Value>>) {
         if (valuesList.isEmpty()) return
 
-        val valuesMap = addToValuesMap(valuesList)
-        renderView(valuesMap, true)
+        addToView(valuesList.toTypedMap(), true)
     }
 
     fun addChartValues(values: List<Value>) {
         if (values.isEmpty()) return
 
-        val dataMap = addToValuesMap(listOf(values))
-        renderView(dataMap, true)
+        addToView(listOf(values).toTypedMap(), true)
     }
 
     fun clearChartValues() {
-        synchronized(cachedValuesMap) {
-            cachedValuesMap.clear()
-        }
-
         lifecycleScope.launch {
             chartContainer?.forEach {
                 it.findViewById<BWLineChart>(R.id.chart)?.clear()
@@ -93,28 +87,27 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
         }
     }
 
-    private fun addToValuesMap(list: List<List<Value>>): Map<String, List<Value>> {
-        val valuesMap: Map<String, List<Value>>
-        synchronized(cachedValuesMap) {
-            for (dataList in list) {
-                for (data in dataList) {
-                    cachedValuesMap.getOrPut(data.type) { mutableListOf() }.add(data)
-                }
-            }
+    private fun List<List<Value>>.toTypedMap(): Map<String, List<Value>> {
+        val dataMap = mutableMapOf<String, MutableList<Value>>()
+        forEach { it.groupByTo(dataMap) { value -> value.type } }
+        return dataMap
+    }
 
-            valuesMap = cachedValuesMap.toMap()
+    private fun addToView(valuesMap: Map<String, List<Value>>, moveToEnd: Boolean = false) {
+        val container = chartContainer ?: return
+        lifecycleScope.launch {
+            addToViewLocked(container, valuesMap, moveToEnd)
         }
-        return valuesMap
     }
 
 
-    private fun renderView(valuesMap: Map<String, List<Value>>, moveToEnd: Boolean = false) = lifecycleScope.launch {
-        val container = chartContainer ?: return@launch
-
+    private suspend fun addToViewLocked(
+        container: ViewGroup,
+        valuesMap: Map<String, List<Value>>,
+        moveToEnd: Boolean = false
+    ) = lock.withLock {
         for ((type, values) in valuesMap) {
             if (type == TIME || type == ORIGIN_SPO2 || type == PPG_IR_SIGNAL) continue
-
-            delay(100L)
 
             val itemView = container.findViewWithTag(type)
                 ?: layoutInflater.inflate(R.layout.item_chart, container, false).also {
@@ -125,18 +118,15 @@ class ChartFragment : Fragment(R.layout.fragment_chart) {
             val titleView = itemView.findViewById<TextView>(R.id.title)
             val chartView = itemView.findViewById<BWLineChart>(R.id.chart)
             titleView.text = type
-            chartView.setDataList(type, values.toList(), when (type) {
-                SPO2 -> valuesMap.getOrElse(PPG_IR_SIGNAL) { emptyList() }
-                else -> emptyList()
-            })
-            if (moveToEnd) {
-                chartView.moveToEnd()
-            } else {
-                chartView.animateX(1000)
-            }
+            chartView.addDataList(
+                type,
+                values.toList(), when (type) {
+                    SPO2 -> valuesMap[PPG_IR_SIGNAL]?.lastOrNull()
+                    else -> null
+                },
+                moveToEnd
+            )
         }
     }
-
-
 
 }
